@@ -15,6 +15,8 @@ import com.example.uinavegacion.data.repository.UserRepository
 import com.example.uinavegacion.navigation.AppNavGraph
 import com.example.uinavegacion.ui.viewmodel.AuthViewModel
 import com.example.uinavegacion.ui.viewmodel.AuthViewModelFactory
+import com.example.uinavegacion.ui.viewmodel.BookingViewModel
+import com.example.uinavegacion.ui.viewmodel.BookingViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,14 +48,22 @@ fun AppRoot() { // Raíz de la app para separar responsabilidades (se conserva)
     // ^ Singleton de Room. No crea múltiples instancias.
 
     val userDao = db.userDao()
+    val fieldDao= db.fieldDao()
+    val bookingDao= db.bookingDao()
     // ^ Obtenemos el DAO de usuarios desde la DB.
 
-    val userRepository = UserRepository(userDao)
+    val userRepository = UserRepository(userDao,bookingDao,fieldDao)
+
+
     // ^ Repositorio que encapsula la lógica de login/registro contra Room.
 
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModelFactory(userRepository)
     )
+    val bookingViewModel: BookingViewModel = viewModel(
+        factory = BookingViewModelFactory(userRepository)
+    )
+
     // ^ Creamos el ViewModel con factory para inyectar el repositorio.
     //   Esto reemplaza cualquier uso anterior de listas en memoria (USERS).
 
@@ -67,7 +77,8 @@ fun AppRoot() { // Raíz de la app para separar responsabilidades (se conserva)
             // para que toda la app use la MISMA instancia que acabamos de inyectar.
             AppNavGraph(
                 navController = navController,
-                authViewModel = authViewModel // <-- NUEVO parámetro
+                authViewModel = authViewModel ,
+                bookingViewModel =  bookingViewModel
             )
             // NOTA: Si tu AppNavGraph no tiene este parámetro aún, basta con agregarlo:
             // fun AppNavGraph(navController: NavHostController, authViewModel: AuthViewModel) { ... }

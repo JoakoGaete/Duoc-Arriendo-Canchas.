@@ -10,11 +10,13 @@ import androidx.compose.material3.*                           // Material 3
 import androidx.compose.runtime.*                             // remember y Composable
 import androidx.compose.ui.Alignment                          // Alineaciones
 import androidx.compose.ui.Modifier                           // Modificador
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.*                       // KeyboardOptions/Types/Transformations
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp                            // DPs
 import androidx.lifecycle.compose.collectAsStateWithLifecycle // Observa StateFlow con lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel         // Obtiene ViewModel
+import com.example.uinavegacion.data.local.Storage.UserPreferences
 import com.example.uinavegacion.ui.viewmodel.AuthViewModel         // Nuestro ViewModel
 
 
@@ -25,12 +27,18 @@ fun LoginScreenVm(
     onLoginOkNavigateHome: () -> Unit,                       // Navega a Home cuando el login es exitoso
     onGoRegister: () -> Unit                                 // Navega a Registro
 ) {
+    val context = LocalContext.current
+    //traer el DataStore
+    val userPrefrs = remember { UserPreferences(context) }
 
     val state by vm.login.collectAsStateWithLifecycle()      // Observa el StateFlow en tiempo real
 
-    if (state.success) {                                     // Si login fue exitoso…
-        vm.clearLoginResult()                                // Limpia banderas
-        onLoginOkNavigateHome()                              // Navega a Home
+    LaunchedEffect(state.success) {
+        if (state.success) { // Si login fue exitoso…
+            userPrefrs.setLoggedIn(true)
+            vm.clearLoginResult()                                // Limpia banderas
+            onLoginOkNavigateHome()                              // Navega a Home
+        }
     }
 
     LoginScreen(                                             // Delegamos a UI presentacional
@@ -88,7 +96,7 @@ private fun LoginScreen(
             Spacer(Modifier.height(12.dp)) // Separación
 
             Text(
-                text = "Pantalla de Login (demo). Usa la barra superior, el menú lateral o los botones.",
+                text = "Inicia sesion para acceder a todas las funciones",
                 textAlign = TextAlign.Center // Alineación centrada
             )
             Spacer(Modifier.height(20.dp)) // Separación

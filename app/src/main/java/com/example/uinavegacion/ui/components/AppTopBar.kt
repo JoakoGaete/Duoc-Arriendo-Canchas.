@@ -3,6 +3,7 @@ package com.example.uinavegacion.ui.components
 import androidx.compose.material.icons.Icons // Conjunto de íconos Material
 import androidx.compose.material.icons.filled.Home // Ícono Home
 import androidx.compose.material.icons.filled.AccountCircle // Ícono Login
+import androidx.compose.material.icons.filled.BookmarkAdded
 import androidx.compose.material.icons.filled.Menu // Ícono hamburguesa
 import androidx.compose.material.icons.filled.MoreVert // Ícono 3 puntitos (overflow)
 import androidx.compose.material.icons.filled.Person // Ícono Registro
@@ -24,7 +25,8 @@ fun AppTopBar(
     onOpenDrawer: () -> Unit, // Abre el drawer (hamburguesa)
     onHome: () -> Unit,       // Navega a Home
     onLogin: () -> Unit,      // Navega a Login
-    onRegister: () -> Unit    // Navega a Registro
+    onRegister: () -> Unit,    // Navega a Registro
+    onBooking: () -> Unit
 ) {
     //lo que hace es crear una variable de estado recordada que le dice a la interfaz
     // si el menú desplegable de 3 puntitos debe estar visible (true) o oculto (false).
@@ -36,7 +38,7 @@ fun AppTopBar(
         ),
         title = { // Slot del título
             Text(
-                text = "Demo Navegación Compose", // Título visible
+                text = "Arriendo Canchas Duoc", // Título visible
                 style = MaterialTheme.typography.titleLarge, // Estilo grande
                 maxLines = 1,              // asegura una sola línea Int.MAX_VALUE   // permite varias líneas
                 overflow = TextOverflow.Ellipsis // agrega "..." si no cabe
@@ -52,11 +54,11 @@ fun AppTopBar(
             IconButton(onClick = onHome) { // Ir a Home
                 Icon(Icons.Filled.Home, contentDescription = "Home") // Ícono Home
             }
+            IconButton(onClick = { showMenu = true }) { // Abre menú overflow
+                Icon(Icons.Filled.BookmarkAdded, contentDescription = "Arrendar") // Ícono 3 puntitos
+            }
             IconButton(onClick = onLogin) { // Ir a Login
                 Icon(Icons.Filled.AccountCircle, contentDescription = "Login") // Ícono Login
-            }
-            IconButton(onClick = onRegister) { // Ir a Registro
-                Icon(Icons.Filled.Person, contentDescription = "Registro") // Ícono Registro
             }
             IconButton(onClick = { showMenu = true }) { // Abre menú overflow
                 Icon(Icons.Filled.MoreVert, contentDescription = "Más") // Ícono 3 puntitos
@@ -76,6 +78,10 @@ fun AppTopBar(
                 DropdownMenuItem( // Opción Registro
                     text = { Text("Registro") },
                     onClick = { showMenu = false; onRegister() }
+                )
+                DropdownMenuItem( // Opción Arrendar
+                    text = { Text("Arrendar Cancha") },
+                    onClick = { showMenu = false; onBooking() }
                 )
             }
         }

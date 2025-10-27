@@ -6,8 +6,8 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "Bookings")
 data class BookingEntity(
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val userId: String,     //id del usuario que reserva
+    val id: Long = 0L,
+    val userId: Long,     //id del usuario que reserva
     val fieldId: Int,       //id de la cancha reservada
     val bookingDate: String,//fecha de la reserva
     val startTime: String,    //hora de inicio de la reserva

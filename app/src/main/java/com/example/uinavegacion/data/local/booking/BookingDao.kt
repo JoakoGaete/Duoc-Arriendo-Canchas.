@@ -19,5 +19,5 @@ interface BookingDao {
 
     // Obtiene todas las reservas para una cancha en una fecha
     @Query("SELECT * FROM bookings WHERE fieldId = :fieldId AND bookingDate = :date")
-    fun getBookingsForFieldOnDate(fieldId: Int, date: String): Flow<List<BookingEntity>>
+    fun getBookingsForFieldOnDate(fieldId: Int, date: String):List<BookingEntity>
 }

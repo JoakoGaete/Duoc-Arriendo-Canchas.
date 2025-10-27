@@ -11,29 +11,40 @@ import kotlinx.coroutines.launch // Para abrir/cerrar drawer con corrutinas
 import androidx.compose.material3.ModalNavigationDrawer // Drawer lateral modal
 import androidx.compose.material3.rememberDrawerState // Estado del drawer
 import androidx.compose.material3.DrawerValue // Valores (Opened/Closed)
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope // Alcance de corrutina
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 
 import com.example.uinavegacion.ui.components.AppTopBar // Barra superior
 import com.example.uinavegacion.ui.components.AppDrawer // Drawer composable
 import com.example.uinavegacion.ui.components.defaultDrawerItems // Ítems por defecto
+import com.example.uinavegacion.ui.viewmodel.BookingScreenVm
 import com.example.uinavegacion.ui.screen.HomeScreen // Pantalla Home
 import com.example.uinavegacion.ui.screen.LoginScreenVm // Pantalla Login
 import com.example.uinavegacion.ui.screen.RegisterScreenVm // Pantalla Registro
+import com.example.uinavegacion.ui.screen.BookingScreen
 import com.example.uinavegacion.ui.viewmodel.AuthViewModel
+
+import com.example.uinavegacion.ui.viewmodel.BookingViewModel
+
 
 @Composable // Gráfico de navegación + Drawer + Scaffold
 fun AppNavGraph(navController: NavHostController,
-                authViewModel: AuthViewModel        // <-- 1.- NUEVO: recibimos el VM inyectado desde MainActivity
+                authViewModel: AuthViewModel, bookingViewModel: BookingViewModel     // <-- 1.- NUEVO: recibimos el VM inyectado desde MainActivity
      ) { // Recibe el controlador
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed) // Estado del drawer
     val scope = rememberCoroutineScope() // Necesario para abrir/cerrar drawer
+    val bookingViewModel: BookingViewModel = viewModel()
+
 
     // Helpers de navegación (reutilizamos en topbar/drawer/botones)
-    val goHome: () -> Unit    = { navController.navigate(Route.Home.path) }    // Ir a Home
-    val goLogin: () -> Unit   = { navController.navigate(Route.Login.path) }   // Ir a Login
+    val goHome: () -> Unit = { navController.navigate(Route.Home.path) }    // Ir a Home
+    val goLogin: () -> Unit = { navController.navigate(Route.Login.path) }   // Ir a Login
     val goRegister: () -> Unit = { navController.navigate(Route.Register.path) } // Ir a Registro
+    val goBooking: () -> Unit = { navController.navigate(Route.Booking.path) } // Ir a arrendar
 
     ModalNavigationDrawer( // Capa superior con drawer lateral
         drawerState = drawerState, // Estado del drawer
@@ -52,6 +63,10 @@ fun AppNavGraph(navController: NavHostController,
                     onRegister = {
                         scope.launch { drawerState.close() } // Cierra drawer
                         goRegister() // Navega a Registro
+                    },
+                    onBooking = {
+                        scope.launch { drawerState.close() }
+                        goBooking()
                     }
                 )
             )
@@ -63,7 +78,8 @@ fun AppNavGraph(navController: NavHostController,
                     onOpenDrawer = { scope.launch { drawerState.open() } }, // Abre drawer
                     onHome = goHome,     // Botón Home
                     onLogin = goLogin,   // Botón Login
-                    onRegister = goRegister // Botón Registro
+                    onRegister = goRegister, // Botón Registro
+                    onBooking = goBooking
                 )
             }
         ) { innerPadding -> // Padding que evita solapar contenido
@@ -75,7 +91,10 @@ fun AppNavGraph(navController: NavHostController,
                 composable(Route.Home.path) { // Destino Home
                     HomeScreen(
                         onGoLogin = goLogin,     // Botón para ir a Login
-                        onGoRegister = goRegister // Botón para ir a Registro
+                        onGoRegister = goRegister, // Botón para ir a Registro
+                        onGoBooking = goBooking,
+                        viewModel = authViewModel
+
                     )
                 }
                 composable(Route.Login.path) { // Destino Login
@@ -96,7 +115,23 @@ fun AppNavGraph(navController: NavHostController,
                         onGoLogin = goLogin                        // Botón alternativo para ir a Login
                     )
                 }
+                composable(Route.Booking.path) {
+                    val loginstate by authViewModel.login.collectAsStateWithLifecycle()
+
+                    val userId = loginstate.user?.id ?: 0L
+
+
+                    BookingScreenVm(
+                        vm = bookingViewModel,
+                        userId = userId, // Now the compiler knows userId is a non-null Long here
+                        onBookingSuccess = { navController.navigate(Route.Home.path) }
+                        )
+                    }
+                }
+            }
+
             }
         }
-    }
-}
+
+
+

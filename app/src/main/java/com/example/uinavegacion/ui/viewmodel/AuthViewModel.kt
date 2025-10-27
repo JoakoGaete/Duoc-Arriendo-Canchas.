@@ -1,7 +1,13 @@
 package com.example.uinavegacion.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel                       // Base de ViewModel
 import androidx.lifecycle.viewModelScope                  // Scope de corrutinas ligado al VM
+import com.example.uinavegacion.data.local.Storage.UserPreferences
+import com.example.uinavegacion.data.local.booking.BookingDao
+import com.example.uinavegacion.data.local.booking.BookingEntity
+import com.example.uinavegacion.data.local.field.FieldEntity
+import com.example.uinavegacion.data.local.user.UserEntity
 import kotlinx.coroutines.delay                            // Simulamos tareas async (IO/red)
 import kotlinx.coroutines.flow.MutableStateFlow            // Estado observable mutable
 import kotlinx.coroutines.flow.StateFlow                   // Exposición inmutable
@@ -11,6 +17,7 @@ import com.example.uinavegacion.domain.validation.*             // Importamos la
 
 // 1.- 🔁 NUEVO: importamos el repositorio real que habla con Room/SQLite
 import com.example.uinavegacion.data.repository.UserRepository
+import kotlinx.coroutines.flow.asStateFlow
 
 // ----------------- ESTADOS DE UI (observable con StateFlow) -----------------
 
@@ -22,7 +29,8 @@ data class LoginUiState(                                   // Estado de la panta
     val isSubmitting: Boolean = false,                     // Flag de carga
     val canSubmit: Boolean = false,                        // Habilitar botón
     val success: Boolean = false,                          // Resultado OK
-    val errorMsg: String? = null                           // Error global (credenciales inválidas)
+    val errorMsg: String? = null,                          // Error global (credenciales inválidas)
+    val user: UserEntity?=null
 )
 
 data class RegisterUiState(                                // Estado de la pantalla Registro (<= 5 campos)
@@ -44,6 +52,7 @@ data class RegisterUiState(                                // Estado de la panta
     val errorMsg: String? = null                           // Error global (ej: duplicado)
 )
 
+
 // ----------------- COLECCIÓN EN MEMORIA (solo para la demo) -----------------
 
 //2.- Eliminamos la estructura de DemoUser
@@ -63,10 +72,19 @@ class AuthViewModel(
     private val _register = MutableStateFlow(RegisterUiState()) // Estado interno (Registro)
     val register: StateFlow<RegisterUiState> = _register        // Exposición inmutable
 
+    private val _booking = MutableStateFlow(BookingUiState())
+
+    val booking: StateFlow<BookingUiState> = _booking
+
     // ----------------- LOGIN: handlers y envío -----------------
 
     fun onLoginEmailChange(value: String) {                 // Handler cuando cambia el email
-        _login.update { it.copy(email = value, emailError = validateEmail(value)) } // Guardamos + validamos
+        _login.update {
+            it.copy(
+                email = value,
+                emailError = validateEmail(value)
+            )
+        } // Guardamos + validamos
         recomputeLoginCanSubmit()                           // Recalculamos habilitado
     }
 
@@ -105,6 +123,7 @@ class AuthViewModel(
         }
     }
 
+
     fun clearLoginResult() {                                // Limpia banderas tras navegar
         _login.update { it.copy(success = false, errorMsg = null) }
     }
@@ -112,7 +131,8 @@ class AuthViewModel(
     // ----------------- REGISTRO: handlers y envío -----------------
 
     fun onNameChange(value: String) {                       // Handler del nombre
-        val filtered = value.filter { it.isLetter() || it.isWhitespace() } // Filtramos números/símbolos (solo letras/espacios)
+        val filtered =
+            value.filter { it.isLetter() || it.isWhitespace() } // Filtramos números/símbolos (solo letras/espacios)
         _register.update {                                  // Guardamos + validamos
             it.copy(name = filtered, nameError = validateNameLettersOnly(filtered))
         }
@@ -120,7 +140,12 @@ class AuthViewModel(
     }
 
     fun onRegisterEmailChange(value: String) {              // Handler del email
-        _register.update { it.copy(email = value, emailError = validateEmail(value)) } // Guardamos + validamos
+        _register.update {
+            it.copy(
+                email = value,
+                emailError = validateEmail(value)
+            )
+        } // Guardamos + validamos
         recomputeRegisterCanSubmit()
     }
 
@@ -133,21 +158,38 @@ class AuthViewModel(
     }
 
     fun onRegisterPassChange(value: String) {               // Handler de la contraseña
-        _register.update { it.copy(pass = value, passError = validateStrongPassword(value)) } // Validamos seguridad
+        _register.update {
+            it.copy(
+                pass = value,
+                passError = validateStrongPassword(value)
+            )
+        } // Validamos seguridad
         // Revalidamos confirmación con la nueva contraseña
         _register.update { it.copy(confirmError = validateConfirm(it.pass, it.confirm)) }
         recomputeRegisterCanSubmit()
     }
 
     fun onConfirmChange(value: String) {                    // Handler de confirmación
-        _register.update { it.copy(confirm = value, confirmError = validateConfirm(it.pass, value)) } // Guardamos + validamos
+        _register.update {
+            it.copy(
+                confirm = value,
+                confirmError = validateConfirm(it.pass, value)
+            )
+        } // Guardamos + validamos
         recomputeRegisterCanSubmit()
     }
 
     private fun recomputeRegisterCanSubmit() {              // Habilitar "Registrar" si todo OK
         val s = _register.value                              // Tomamos el estado actual
-        val noErrors = listOf(s.nameError, s.emailError, s.phoneError, s.passError, s.confirmError).all { it == null } // Sin errores
-        val filled = s.name.isNotBlank() && s.email.isNotBlank() && s.phone.isNotBlank() && s.pass.isNotBlank() && s.confirm.isNotBlank() // Todo lleno
+        val noErrors = listOf(
+            s.nameError,
+            s.emailError,
+            s.phoneError,
+            s.passError,
+            s.confirmError
+        ).all { it == null } // Sin errores
+        val filled =
+            s.name.isNotBlank() && s.email.isNotBlank() && s.phone.isNotBlank() && s.pass.isNotBlank() && s.confirm.isNotBlank() // Todo lleno
         _register.update { it.copy(canSubmit = noErrors && filled) } // Actualizamos flag
     }
 
@@ -155,7 +197,13 @@ class AuthViewModel(
         val s = _register.value                              // Snapshot del estado
         if (!s.canSubmit || s.isSubmitting) return          // Evitamos reentradas
         viewModelScope.launch {                             // Corrutina
-            _register.update { it.copy(isSubmitting = true, errorMsg = null, success = false) } // Loading
+            _register.update {
+                it.copy(
+                    isSubmitting = true,
+                    errorMsg = null,
+                    success = false
+                )
+            } // Loading
             delay(700)                                      // Simulamos IO
 
             // 7.- Se cambia esto por lo anterior✅ NUEVO: inserta en BD (con teléfono) vía repositorio
@@ -171,8 +219,10 @@ class AuthViewModel(
                 if (result.isSuccess) {
                     it.copy(isSubmitting = false, success = true, errorMsg = null)  // OK
                 } else {
-                    it.copy(isSubmitting = false, success = false,
-                        errorMsg = result.exceptionOrNull()?.message ?: "No se pudo registrar")
+                    it.copy(
+                        isSubmitting = false, success = false,
+                        errorMsg = result.exceptionOrNull()?.message ?: "No se pudo registrar"
+                    )
                 }
             }
         }
@@ -180,5 +230,23 @@ class AuthViewModel(
 
     fun clearRegisterResult() {                             // Limpia banderas tras navegar
         _register.update { it.copy(success = false, errorMsg = null) }
+    }
+
+
+
+
+
+
+    private val _fields = MutableStateFlow<List<FieldEntity>>(emptyList())
+    val fields = _fields.asStateFlow()
+
+    init {
+        loadFields()
+    }
+
+    private fun loadFields() {
+        viewModelScope.launch {
+            _fields.value = repository.getAllFields() // suspend fun devuelve List<FieldEntity>
+        }
     }
 }

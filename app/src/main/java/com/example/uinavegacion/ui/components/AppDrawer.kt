@@ -3,6 +3,7 @@ package com.example.uinavegacion.ui.components
 import androidx.compose.material.icons.Icons // Íconos Material
 import androidx.compose.material.icons.filled.Home // Ícono Home
 import androidx.compose.material.icons.filled.AccountCircle // Ícono Login
+import androidx.compose.material.icons.filled.BookmarkAdded
 import androidx.compose.material.icons.filled.Person // Ícono Registro
 import androidx.compose.material3.Icon // Ícono en ítem del drawer
 import androidx.compose.material3.NavigationDrawerItem // Ítem seleccionable
@@ -47,9 +48,11 @@ fun AppDrawer(
 fun defaultDrawerItems(
     onHome: () -> Unit,   // Acción Home
     onLogin: () -> Unit,  // Acción Login
-    onRegister: () -> Unit // Acción Registro
+    onRegister: () -> Unit, // Acción Registro
+    onBooking: () -> Unit
 ): List<DrawerItem> = listOf(
     DrawerItem("Home", Icons.Filled.Home, onHome),          // Ítem Home
     DrawerItem("Login", Icons.Filled.AccountCircle, onLogin),       // Ítem Login
-    DrawerItem("Registro", Icons.Filled.Person, onRegister) // Ítem Registro
+    DrawerItem("Registro", Icons.Filled.Person, onRegister), // Ítem Registro
+    DrawerItem("Arrendar", Icons.Filled.BookmarkAdded, onBooking) // Item Arrendar
 )

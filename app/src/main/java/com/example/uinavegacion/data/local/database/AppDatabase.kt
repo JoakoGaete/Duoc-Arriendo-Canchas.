@@ -21,8 +21,8 @@ import kotlinx.coroutines.launch
 @Database(
     // Añadimos las nuevas entidades a la lista
     entities = [UserEntity::class, FieldEntity::class, BookingEntity::class],
-    version = 2,
-    exportSchema = false
+    version = 1,
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
 
@@ -31,12 +31,13 @@ abstract class AppDatabase : RoomDatabase() {
 
     //Daos de canchas y reservas
     abstract fun fieldDao(): FieldDao
+
     abstract fun bookingDao(): BookingDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
-        private const val DB_NAME = "ui_navegacion.db"
+        private const val DB_NAME = "arriendo_canchas.db"
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -100,8 +101,7 @@ abstract class AppDatabase : RoomDatabase() {
                     type = "Futbolito 7 vs 7 - Pasto Sintético",
                     location = "Sede Mall Plaza Norte",
                     pricePerHour = 17000.0,
-                    // Usa una URL de imagen real o el nombre de una imagen en tus recursos
-                    imageUrl = "https://example.com/cancha1.jpg"
+                    imageUrl = "cancha1"
                 ),
                 FieldEntity(
                     id = 2,
@@ -109,7 +109,7 @@ abstract class AppDatabase : RoomDatabase() {
                     type = "Futbolito 7 vs 7 - Pasto Sintético",
                     location = "Sede Mall Plaza Norte",
                     pricePerHour = 18000.0,
-                    imageUrl = "https://example.com/cancha2.jpg"
+                    imageUrl = "cancha2"
                 ),
                 FieldEntity(
                     id = 3,
@@ -117,7 +117,7 @@ abstract class AppDatabase : RoomDatabase() {
                     type = "Fútbol 11 vs 11 - Pasto Natural",
                     location = "Sede Mall Plaza Norte",
                     pricePerHour = 25000.0,
-                    imageUrl = "https://example.com/cancha3.jpg"
+                    imageUrl = "cancha3"
                 )
             )
             fieldDao.insertAll(seedFields)

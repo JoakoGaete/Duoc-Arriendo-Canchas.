@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FieldDao {
-    @Query("SELECT * FROM fields ORDER BY name ASC") // Consulta SQL para obtener todas las canchas ordenadas por nombre
-    fun getAllFields(): Flow<List<FieldEntity>>
+    @Query("SELECT * FROM fields ") // Consulta SQL para obtener todas las canchas
+    suspend fun getAllFields(): List<FieldEntity>
 
     @Query("SELECT * FROM fields WHERE id = :fieldId") // : indica que es una variable en la consulta
     fun getFieldById(fieldId: Int): Flow<FieldEntity?>
