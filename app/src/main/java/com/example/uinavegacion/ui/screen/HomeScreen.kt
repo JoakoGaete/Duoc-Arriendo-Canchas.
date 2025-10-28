@@ -38,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,94 +58,102 @@ import coil.request.ImageRequest
 import com.example.uinavegacion.data.local.Storage.UserPreferences
 import com.example.uinavegacion.ui.components.FieldCard
 import com.example.uinavegacion.ui.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 
-@Composable // Pantalla Home (sin formularios, solo navegación/diseño)
+@Composable
 fun HomeScreen(
-    onGoLogin: () -> Unit,   // Acción a Login
-    onGoRegister: () -> Unit,// Acción a Registro
+    onGoLogin: () -> Unit,
+    onGoRegister: () -> Unit,
     onGoBooking: () -> Unit,
-    onFieldClick: () -> Unit = {},
-    viewModel: AuthViewModel
+    onFieldClick: () -> Unit ={},
+    viewModel: AuthViewModel,
+    onGoMapa: () -> Unit
 ) {
-    //contexto
-
     val context = LocalContext.current
     val userPrefs = remember { UserPreferences(context) }
-
     val fields by viewModel.fields.collectAsState()
     val isLoggedIn by userPrefs.isLoggedIn.collectAsStateWithLifecycle(false)
+    val bg = MaterialTheme.colorScheme.surfaceBright
+    val scope = rememberCoroutineScope()
 
-    val bg = MaterialTheme.colorScheme.surfaceBright // Fondo agradable para Home
-
-
-
-
-
-    Box( // Contenedor a pantalla completa
+    Box(
         modifier = Modifier
-            .fillMaxSize() // Ocupa todo
-            .background(bg) // Aplica fondo
-            .padding(16.dp), // Margen interior
-        contentAlignment = Alignment.Center // Centra contenido
+            .fillMaxSize()
+            .background(bg)
+            .padding(16.dp)
     ) {
-        Column( // Estructura vertical
-            horizontalAlignment = Alignment.CenterHorizontally // Centra hijos
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(bottom = 32.dp)
         ) {
-            // Cabecera como Row (ejemplo de estructura)
-            Row(
-                verticalAlignment = Alignment.CenterVertically // Centra vertical
-            ) {
-                Text( // Título Home
-                    text = "Inicio",
-                    style = MaterialTheme.typography.headlineSmall, // Estilo título
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(8.dp)) // Separación horizontal
-                Icon(
-                    imageVector = if(isLoggedIn) Icons.Filled.Person else Icons.Filled.PersonOff,
-                    contentDescription = if(isLoggedIn) "Usuario Logueado" else "Usuario no Logueado",
-                    tint = if(isLoggedIn) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.outline
-                )
-                AssistChip( // Chip decorativo (Material 3)
-                    onClick = {}, // Sin acción (demo)
-                    label = { Text("Arrienda las mejores canchas de Fútbol aquí") } // Texto chip
+            item {
+                // Cabecera
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Inicio",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(8.dp))
+
+                    AssistChip(
+                        onClick = {},
+                        label = { Text("Arrienda las mejores canchas de Fútbol aquí, presiona una cancha y procede a arrendar o navega por la app como gustes!!!",
+                            style = MaterialTheme.typography.bodyMedium)},
+
+                    )
+                }
+
+                Spacer(Modifier.height(20.dp))
+            }
+
+            // Lista de canchas
+            items(fields) { field ->
+                FieldCard(
+                    field = field,
+                    onClick = { onGoBooking() }
                 )
             }
 
-            Spacer(Modifier.height(20.dp)) // Separación
+            item {
+                Spacer(Modifier.height(24.dp))
 
+                // Botones al final
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
 
-            LazyColumn (
+                    // Botón de Login / Logout
+                    Button(
+                        onClick = {
+                            if (isLoggedIn) {
+                                scope.launch {
+                                    userPrefs.logout()
+                                    Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                onGoLogin()
+                            }
+                        }
+                    ) {
+                        Text(if (isLoggedIn) "Cerrar Sesión" else "Iniciar Sesión")
+                    }
 
-                modifier = Modifier
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(fields) { field ->
-                    FieldCard (
-                        field = field,
-                        onClick = { onGoBooking() }
-                    )
+                    // Botón de registro
+                    OutlinedButton(onClick = onGoRegister) {
+                        Text("Ir a Registro")
+                    }
+                }
+                Button(onClick = onGoMapa) {
+                    Text("Ver nuestra ubicación")
                 }
             }
 
-            Spacer(Modifier.height(24.dp)) // Separación
-
-            // Botones de navegación principales
-            Row( // Dos botones en fila
-                horizontalArrangement = Arrangement.spacedBy(12.dp) // Espacio entre botones
-            ) {
-                Button(onClick = onGoLogin) { Text("Ir a Login") } // Navega a Login
-                OutlinedButton(onClick = onGoRegister) { Text("Ir a Registro") } // A Registro
-                Button(onClick = onGoBooking ) {Text("Arrendar cancha", color = Color.Red ) }
-            }
         }
     }
 }

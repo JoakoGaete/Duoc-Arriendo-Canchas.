@@ -1,5 +1,6 @@
 package com.example.uinavegacion.ui.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background                 // Fondo
 import androidx.compose.foundation.layout.*                   // Box/Column/Row/Spacer
 import androidx.compose.foundation.text.KeyboardOptions
@@ -10,7 +11,10 @@ import androidx.compose.material3.*                           // Material 3
 import androidx.compose.runtime.*                             // remember y Composable
 import androidx.compose.ui.Alignment                          // Alineaciones
 import androidx.compose.ui.Modifier                           // Modificador
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.*                       // KeyboardOptions/Types/Transformations
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp                            // DPs
@@ -18,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle // Observa StateFl
 import androidx.lifecycle.viewmodel.compose.viewModel         // Obtiene ViewModel
 import com.example.uinavegacion.data.local.Storage.UserPreferences
 import com.example.uinavegacion.ui.viewmodel.AuthViewModel         // Nuestro ViewModel
+import com.example.uinavegacion.R
 
 
 //1 Lo primero que creamos en el archivo
@@ -73,9 +78,12 @@ private fun LoginScreen(
     onSubmit: () -> Unit,                                    // Acción enviar
     onGoRegister: () -> Unit                                 // Acción ir a registro
 ) {
-    val bg = MaterialTheme.colorScheme.secondaryContainer // Fondo distinto para contraste
+    val bg = MaterialTheme.colorScheme.background // Fondo distinto para contraste
     //4 Agregamos la siguiente linea
     var showPass by remember { mutableStateOf(false) }        // Estado local para mostrar/ocultar contraseña
+    val painter = painterResource(id = R.drawable.login)
+
+
 
     Box(
         modifier = Modifier
@@ -89,6 +97,14 @@ private fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),              // Ancho completo
             horizontalAlignment = Alignment.CenterHorizontally // Centrado horizontal
         ) {
+            Image(
+                painter = painter,
+                contentDescription = "login",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                contentScale = ContentScale.Fit
+            )
             Text(
                 text = "Login",
                 style = MaterialTheme.typography.headlineSmall // Título
@@ -96,7 +112,7 @@ private fun LoginScreen(
             Spacer(Modifier.height(12.dp)) // Separación
 
             Text(
-                text = "Inicia sesion para acceder a todas las funciones",
+                text = "Inicia sesion para acceder a todas las funciones y difrutal del futbol total",
                 textAlign = TextAlign.Center // Alineación centrada
             )
             Spacer(Modifier.height(20.dp)) // Separación

@@ -20,6 +20,10 @@ class UserPreferences (private val context: Context){
             prefs[isLoggedInKey] = value
         }
     }
+    suspend fun logout() {
+        setLoggedIn(false)
+    }
+
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data
         .map { prefs ->

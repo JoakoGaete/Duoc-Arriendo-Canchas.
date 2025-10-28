@@ -1,8 +1,12 @@
 package com.example.uinavegacion.ui.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background                 // Fondo
 import androidx.compose.foundation.layout.*                   // Box/Column/Row/Spacer
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons                  // Íconos Material
 import androidx.compose.material.icons.filled.Visibility      // Ícono mostrar
 import androidx.compose.material.icons.filled.VisibilityOff   // Ícono ocultar
@@ -10,10 +14,13 @@ import androidx.compose.material3.*                           // Material 3
 import androidx.compose.runtime.*                             // remember, Composable
 import androidx.compose.ui.Alignment                          // Alineaciones
 import androidx.compose.ui.Modifier                           // Modificador
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.*                       // KeyboardOptions/Types/Transformations
 import androidx.compose.ui.unit.dp                            // DPs
 import androidx.lifecycle.compose.collectAsStateWithLifecycle // Observa StateFlow
 import androidx.lifecycle.viewmodel.compose.viewModel         // Obtiene VM
+import com.example.uinavegacion.R
 import com.example.uinavegacion.ui.viewmodel.AuthViewModel         // ViewModel
 
 //1 creamos la union con el viewmodel creado
@@ -84,10 +91,15 @@ private fun RegisterScreen(
     onSubmit: () -> Unit,                                    // Acción Registrar
     onGoLogin: () -> Unit                                    // Ir a Login
 ) {
-    val bg = MaterialTheme.colorScheme.tertiaryContainer // Fondo único
+    val bg = MaterialTheme.colorScheme.background // Fondo único
     //4 Anexamos las variables para mostrar y ocultar el password
     var showPass by remember { mutableStateOf(false) }        // Mostrar/ocultar password
     var showConfirm by remember { mutableStateOf(false) }     // Mostrar/ocultar confirm
+    val painter = painterResource(id = R.drawable.registro)
+    val painter2 = painterResource(id = R.drawable.registro2)
+    val scrollState = rememberScrollState()
+
+
 
     Box(
         modifier = Modifier
@@ -97,7 +109,17 @@ private fun RegisterScreen(
         contentAlignment = Alignment.Center // Centro
     ) {
         // 5 modificamos el parametro de la columna
-        Column(modifier = Modifier.fillMaxWidth()) { // Estructura vertical
+        Column( modifier = Modifier.fillMaxSize()
+            .verticalScroll(scrollState)) {
+                // Estructura vertical
+            Image(
+                painter = painter,
+                contentDescription = "registro",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                contentScale = ContentScale.Fit
+            )
             Text(
                 text = "Registro",
                 style = MaterialTheme.typography.headlineSmall // Título
@@ -233,6 +255,14 @@ private fun RegisterScreen(
             OutlinedButton(onClick = onGoLogin, modifier = Modifier.fillMaxWidth()) {
                 Text("Ir a Login")
             }
+            Image(
+                painter = painter2,
+                contentDescription = "registro 2",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                contentScale = ContentScale.Fit
+            )
         }
     }
 }

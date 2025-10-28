@@ -25,6 +25,7 @@ import com.example.uinavegacion.ui.screen.HomeScreen // Pantalla Home
 import com.example.uinavegacion.ui.screen.LoginScreenVm // Pantalla Login
 import com.example.uinavegacion.ui.screen.RegisterScreenVm // Pantalla Registro
 import com.example.uinavegacion.ui.screen.BookingScreen
+import com.example.uinavegacion.ui.screen.MapaScreen
 import com.example.uinavegacion.ui.viewmodel.AuthViewModel
 
 import com.example.uinavegacion.ui.viewmodel.BookingViewModel
@@ -45,6 +46,9 @@ fun AppNavGraph(navController: NavHostController,
     val goLogin: () -> Unit = { navController.navigate(Route.Login.path) }   // Ir a Login
     val goRegister: () -> Unit = { navController.navigate(Route.Register.path) } // Ir a Registro
     val goBooking: () -> Unit = { navController.navigate(Route.Booking.path) } // Ir a arrendar
+    val goMapa: () -> Unit = { navController.navigate(Route.Mapa.path) } // Ir a mapa
+
+
 
     ModalNavigationDrawer( // Capa superior con drawer lateral
         drawerState = drawerState, // Estado del drawer
@@ -67,6 +71,10 @@ fun AppNavGraph(navController: NavHostController,
                     onBooking = {
                         scope.launch { drawerState.close() }
                         goBooking()
+                    },
+                    onMapa = {
+                        scope.launch { drawerState.close() }
+                        goMapa()
                     }
                 )
             )
@@ -79,7 +87,8 @@ fun AppNavGraph(navController: NavHostController,
                     onHome = goHome,     // Botón Home
                     onLogin = goLogin,   // Botón Login
                     onRegister = goRegister, // Botón Registro
-                    onBooking = goBooking
+                    onBooking = goBooking,
+                    onMapa = goMapa
                 )
             }
         ) { innerPadding -> // Padding que evita solapar contenido
@@ -93,7 +102,8 @@ fun AppNavGraph(navController: NavHostController,
                         onGoLogin = goLogin,     // Botón para ir a Login
                         onGoRegister = goRegister, // Botón para ir a Registro
                         onGoBooking = goBooking,
-                        viewModel = authViewModel
+                        viewModel = authViewModel,
+                        onGoMapa = goMapa
 
                     )
                 }
@@ -127,11 +137,13 @@ fun AppNavGraph(navController: NavHostController,
                         onBookingSuccess = { navController.navigate(Route.Home.path) }
                         )
                     }
+                composable(Route.Mapa.path) {
+                    MapaScreen()
                 }
             }
-
-            }
         }
+    }
+}
 
 
 

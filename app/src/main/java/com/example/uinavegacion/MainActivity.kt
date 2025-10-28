@@ -21,6 +21,11 @@ import com.example.uinavegacion.ui.viewmodel.BookingViewModelFactory
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        org.osmdroid.config.Configuration.getInstance().load(
+            applicationContext,
+            androidx.preference.PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        )
         enableEdgeToEdge()
         setContent {
             AppRoot()

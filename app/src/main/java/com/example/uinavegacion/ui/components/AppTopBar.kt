@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.BookmarkAdded
 import androidx.compose.material.icons.filled.Menu // Ícono hamburguesa
 import androidx.compose.material.icons.filled.MoreVert // Ícono 3 puntitos (overflow)
 import androidx.compose.material.icons.filled.Person // Ícono Registro
+import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material3.CenterAlignedTopAppBar // TopAppBar centrada
 import androidx.compose.material3.DropdownMenu // Menú desplegable
 import androidx.compose.material3.DropdownMenuItem // Opción del menú
@@ -17,7 +18,11 @@ import androidx.compose.material3.MaterialTheme // Tema Material
 import androidx.compose.material3.Text // Texto
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.* // remember / mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.uinavegacion.data.local.Storage.UserPreferences
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable // Composable reutilizable: barra superior
@@ -26,15 +31,20 @@ fun AppTopBar(
     onHome: () -> Unit,       // Navega a Home
     onLogin: () -> Unit,      // Navega a Login
     onRegister: () -> Unit,    // Navega a Registro
-    onBooking: () -> Unit
+    onBooking: () -> Unit,
+    onMapa: ()-> Unit
 ) {
     //lo que hace es crear una variable de estado recordada que le dice a la interfaz
     // si el menú desplegable de 3 puntitos debe estar visible (true) o oculto (false).
     var showMenu by remember { mutableStateOf(false) } // Estado del menú overflow
+    val context = LocalContext.current
+    val userPrefrs = remember { UserPreferences(context) }
+    val isLoggedIn by  userPrefrs.isLoggedIn.collectAsStateWithLifecycle(false)
+
 
     CenterAlignedTopAppBar( // Barra alineada al centro
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primary
+            containerColor = MaterialTheme.colorScheme.primaryContainer // Color de fondo
         ),
         title = { // Slot del título
             Text(
@@ -54,15 +64,20 @@ fun AppTopBar(
             IconButton(onClick = onHome) { // Ir a Home
                 Icon(Icons.Filled.Home, contentDescription = "Home") // Ícono Home
             }
-            IconButton(onClick = { showMenu = true }) { // Abre menú overflow
-                Icon(Icons.Filled.BookmarkAdded, contentDescription = "Arrendar") // Ícono 3 puntitos
+            IconButton(onClick = onBooking) { // Ir a Login
+                Icon(Icons.Filled.BookmarkAdded, contentDescription = "Arrendar") // Ícono Login
             }
             IconButton(onClick = onLogin) { // Ir a Login
-                Icon(Icons.Filled.AccountCircle, contentDescription = "Login") // Ícono Login
+                Icon(
+                    imageVector = if (isLoggedIn) Icons.Filled.Person else Icons.Filled.PersonOff,
+                    contentDescription = null,
+                    tint = if (isLoggedIn)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.outline
+                )
             }
-            IconButton(onClick = { showMenu = true }) { // Abre menú overflow
-                Icon(Icons.Filled.MoreVert, contentDescription = "Más") // Ícono 3 puntitos
-            }
+
             DropdownMenu(
                 expanded = showMenu, // Si está abierto
                 onDismissRequest = { showMenu = false } // Cierra al tocar fuera
