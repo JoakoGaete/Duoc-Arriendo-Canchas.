@@ -20,8 +20,11 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.uinavegacion.R
 import com.example.uinavegacion.data.local.Storage.UserPreferences
+import com.example.uinavegacion.navigation.Route
 import com.example.uinavegacion.ui.viewmodel.AuthViewModel
 
 
@@ -30,7 +33,8 @@ import com.example.uinavegacion.ui.viewmodel.AuthViewModel
 fun LoginScreenVm(
     vm: AuthViewModel,                            // MOD: recibimos el VM desde NavGraph
     onLoginOkNavigateHome: () -> Unit,                       // Navega a Home cuando el login es exitoso
-    onGoRegister: () -> Unit                                 // Navega a Registro
+    onGoRegister: () -> Unit ,
+    navController: NavHostController// Navega a Registro
 ) {
     val context = LocalContext.current
     //traer el DataStore
@@ -42,167 +46,195 @@ fun LoginScreenVm(
 
     LaunchedEffect(state.success) {
         if (state.success) { // Si login fue exitoso…
+            // Guardar estado de sesión
             userPrefrs.setLoggedIn(true)
 
             state.user?.let { user ->
                 userPrefrs.setUserId(user.id)
+                userPrefrs.setAdmin(user.isAdmin)
             }
+
             state.user?.let { user ->
                 Toast.makeText(context, "Bienvenido ${user.name}", Toast.LENGTH_SHORT).show()
             }
-            vm.clearLoginResult()
-            onLoginOkNavigateHome()
-        }
 
-            // Limpia banderas
-
-    }
-
-    LoginScreen(                                             // Delegamos a UI presentacional
-        email = state.email,                                 // Valor de email
-        pass = state.pass,                                   // Valor de password
-        emailError = state.emailError,                       // Error de email
-        passError = state.passError,                         // (Opcional) error de pass en login
-        canSubmit = state.canSubmit,                         // Habilitar botón
-        isSubmitting = state.isSubmitting,                   // Loading
-        errorMsg = state.errorMsg,                           // Error global
-        onEmailChange = vm::onLoginEmailChange,              // Handler email
-        onPassChange = vm::onLoginPassChange,                // Handler pass
-        onSubmit = vm::submitLogin,                          // Acción enviar
-        onGoRegister = onGoRegister                          // Ir a Registro
-    )
-}
-
-
-//2 modificamos la funcion principal haciendo private y agregando variable y elementos dle fiormulario
-@Composable // Pantalla Login (solo navegación, sin formularios)
-private fun LoginScreen(
-    //3 Modificamos estos parametros
-    email: String,                                           // Campo email
-    pass: String,                                            // Campo contraseña
-    emailError: String?,                                     // Error de email
-    passError: String?,                                      // Error de password (opcional)
-    canSubmit: Boolean,                                      // Habilitar botón
-    isSubmitting: Boolean,                                   // Flag loading
-    errorMsg: String?,                                       // Error global (credenciales)
-    onEmailChange: (String) -> Unit,                         // Handler cambio email
-    onPassChange: (String) -> Unit,                          // Handler cambio password
-    onSubmit: () -> Unit,                                    // Acción enviar
-    onGoRegister: () -> Unit                                 // Acción ir a registro
-) {
-    val bg = MaterialTheme.colorScheme.background // Fondo distinto para contraste
-    //4 Agregamos la siguiente linea
-    var showPass by remember { mutableStateOf(false) }        // Estado local para mostrar/ocultar contraseña
-    val painter = painterResource(id = R.drawable.login)
-
-
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize() // Ocupa todo
-            .background(bg) // Fondo
-            .padding(16.dp), // Margen
-        contentAlignment = Alignment.Center // Centro
-    ) {
-        Column(
-            //5 Anexamos el modificador
-            modifier = Modifier.fillMaxWidth(),              // Ancho completo
-            horizontalAlignment = Alignment.CenterHorizontally // Centrado horizontal
-        ) {
-            Image(
-                painter = painter,
-                contentDescription = "login",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                contentScale = ContentScale.Fit
-            )
-            Text(
-                text = "Inicio de sesion",
-                style = MaterialTheme.typography.headlineSmall // Título
-            )
-            Spacer(Modifier.height(12.dp)) // Separación
-
-            Text(
-                text = "Inicia sesion para acceder a todas las funciones y difrutal del futbol total",
-                textAlign = TextAlign.Center // Alineación centrada
-            )
-            Spacer(Modifier.height(20.dp)) // Separación
-
-            //5 Borramos los elementos anteriores y comenzamos a agregar los elementos dle formulario
-// ---------- EMAIL ----------
-            OutlinedTextField(
-                value = email,                               // Valor actual
-                onValueChange = onEmailChange,               // Notifica VM (valida email)
-                label = { Text("Email") },                   // Etiqueta
-                singleLine = true,                           // Una línea
-                isError = emailError != null,                // Marca error si corresponde
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email        // Teclado de email
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (emailError != null) {                        // Muestra mensaje si hay error
-                Text(emailError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
-            }
-
-            Spacer(Modifier.height(8.dp))                    // Espacio
-
-            // ---------- PASSWORD (oculta por defecto) ----------
-            OutlinedTextField(
-                value = pass,                                // Valor actual
-                onValueChange = onPassChange,                // Notifica VM
-                label = { Text("Contraseña") },              // Etiqueta
-                singleLine = true,                           // Una línea
-                visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(), // Toggle mostrar/ocultar
-                trailingIcon = {                             // Ícono para alternar visibilidad
-                    IconButton(onClick = { showPass = !showPass }) {
-                        Icon(
-                            imageVector = if (showPass) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                            contentDescription = if (showPass) "Ocultar contraseña" else "Mostrar contraseña"
-                        )
-                    }
-                },
-                isError = passError != null,                 // (Opcional) marcar error
-                modifier = Modifier.fillMaxWidth()           // Ancho completo
-            )
-            if (passError != null) {                         // (Opcional) mostrar error
-                Text(passError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
-            }
-
-            Spacer(Modifier.height(16.dp))                   // Espacio
-
-            // ---------- BOTÓN ENTRAR ----------
-            Button(
-                onClick = onSubmit,                          // Envía login
-                enabled = canSubmit && !isSubmitting,        // Solo si válido y no cargando
-                modifier = Modifier.fillMaxWidth()  ,
-                colors = ButtonDefaults.buttonColors(Color(0xFF2E811F ))// Ancho completo
-            ) {
-                if (isSubmitting) {                          // UI de carga
-                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Validando...")
+            // Lógica de navegación según tipo de usuario
+            state.user?.let { user ->
+                if (user.isAdmin) {
+                    navController.navigate(Route.Admin.path) // <- Admin va al AdminScreen
                 } else {
-                    Text("Entrar")
+                    onLoginOkNavigateHome() // <- Usuario normal va a Home o Perfil
                 }
             }
 
-            if (errorMsg != null) {                          // Error global (credenciales)
-                Spacer(Modifier.height(8.dp))
-                Text(errorMsg, color = MaterialTheme.colorScheme.error)
-            }
-
-            Spacer(Modifier.height(12.dp))                   // Espacio
-
-            // ---------- BOTÓN IR A REGISTRO ----------
-            OutlinedButton(onClick = onGoRegister, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(
-                0xFF218D1B
-            )
-            )) {
-                Text("Crear cuenta",color = Color(0xFF124933))
-            }
-            //fin modificacion de formulario
+            vm.clearLoginResult()
         }
     }
-}
+
+
+
+
+        LoginScreen(                                             // Delegamos a UI presentacional
+            email = state.email,                                 // Valor de email
+            pass = state.pass,                                   // Valor de password
+            emailError = state.emailError,                       // Error de email
+            passError = state.passError,                         // (Opcional) error de pass en login
+            canSubmit = state.canSubmit,                         // Habilitar botón
+            isSubmitting = state.isSubmitting,                   // Loading
+            errorMsg = state.errorMsg,                           // Error global
+            onEmailChange = vm::onLoginEmailChange,              // Handler email
+            onPassChange = vm::onLoginPassChange,                // Handler pass
+            onSubmit = vm::submitLogin,                          // Acción enviar
+            onGoRegister = onGoRegister                          // Ir a Registro
+        )
+    }
+
+
+    //2 modificamos la funcion principal haciendo private y agregando variable y elementos dle fiormulario
+    @Composable // Pantalla Login (solo navegación, sin formularios)
+    private fun LoginScreen(
+        //3 Modificamos estos parametros
+        email: String,                                           // Campo email
+        pass: String,                                            // Campo contraseña
+        emailError: String?,                                     // Error de email
+        passError: String?,                                      // Error de password (opcional)
+        canSubmit: Boolean,                                      // Habilitar botón
+        isSubmitting: Boolean,                                   // Flag loading
+        errorMsg: String?,                                       // Error global (credenciales)
+        onEmailChange: (String) -> Unit,                         // Handler cambio email
+        onPassChange: (String) -> Unit,                          // Handler cambio password
+        onSubmit: () -> Unit,                                    // Acción enviar
+        onGoRegister: () -> Unit                                 // Acción ir a registro
+    ) {
+        val bg = MaterialTheme.colorScheme.background // Fondo distinto para contraste
+        //4 Agregamos la siguiente linea
+        var showPass by remember { mutableStateOf(false) }        // Estado local para mostrar/ocultar contraseña
+        val painter = painterResource(id = R.drawable.login)
+
+
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize() // Ocupa todo
+                .background(bg) // Fondo
+                .padding(16.dp), // Margen
+            contentAlignment = Alignment.Center // Centro
+        ) {
+            Column(
+                //5 Anexamos el modificador
+                modifier = Modifier.fillMaxWidth(),              // Ancho completo
+                horizontalAlignment = Alignment.CenterHorizontally // Centrado horizontal
+            ) {
+                Image(
+                    painter = painter,
+                    contentDescription = "login",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    contentScale = ContentScale.Fit
+                )
+                Text(
+                    text = "Inicio de sesion",
+                    style = MaterialTheme.typography.headlineSmall // Título
+                )
+                Spacer(Modifier.height(12.dp)) // Separación
+
+                Text(
+                    text = "Inicia sesion para acceder a todas las funciones y difrutar del futbol total",
+                    textAlign = TextAlign.Center // Alineación centrada
+                )
+                Spacer(Modifier.height(20.dp)) // Separación
+
+                //5 Borramos los elementos anteriores y comenzamos a agregar los elementos dle formulario
+// ---------- EMAIL ----------
+                OutlinedTextField(
+                    value = email,                               // Valor actual
+                    onValueChange = onEmailChange,               // Notifica VM (valida email)
+                    label = { Text("Email") },                   // Etiqueta
+                    singleLine = true,                           // Una línea
+                    isError = emailError != null,                // Marca error si corresponde
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email        // Teclado de email
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (emailError != null) {                        // Muestra mensaje si hay error
+                    Text(
+                        emailError,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))                    // Espacio
+
+                // ---------- PASSWORD (oculta por defecto) ----------
+                OutlinedTextField(
+                    value = pass,                                // Valor actual
+                    onValueChange = onPassChange,                // Notifica VM
+                    label = { Text("Contraseña") },              // Etiqueta
+                    singleLine = true,                           // Una línea
+                    visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(), // Toggle mostrar/ocultar
+                    trailingIcon = {                             // Ícono para alternar visibilidad
+                        IconButton(onClick = { showPass = !showPass }) {
+                            Icon(
+                                imageVector = if (showPass) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                contentDescription = if (showPass) "Ocultar contraseña" else "Mostrar contraseña"
+                            )
+                        }
+                    },
+                    isError = passError != null,                 // (Opcional) marcar error
+                    modifier = Modifier.fillMaxWidth()           // Ancho completo
+                )
+                if (passError != null) {                         // (Opcional) mostrar error
+                    Text(
+                        passError,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))                   // Espacio
+
+                // ---------- BOTÓN ENTRAR ----------
+                Button(
+                    onClick = onSubmit,                          // Envía login
+                    enabled = canSubmit && !isSubmitting,        // Solo si válido y no cargando
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(Color(0xFF2E811F))// Ancho completo
+                ) {
+                    if (isSubmitting) {                          // UI de carga
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Validando...")
+                    } else {
+                        Text("Entrar")
+                    }
+                }
+
+                if (errorMsg != null) {                          // Error global (credenciales)
+                    Spacer(Modifier.height(8.dp))
+                    Text(errorMsg, color = MaterialTheme.colorScheme.error)
+                }
+
+                Spacer(Modifier.height(12.dp))                   // Espacio
+
+                // ---------- BOTÓN IR A REGISTRO ----------
+                OutlinedButton(
+                    onClick = onGoRegister,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(
+                            0xFF218D1B
+                        )
+                    )
+                ) {
+                    Text("Crear cuenta", color = Color(0xFF124933))
+                }
+                //fin modificacion de formulario
+            }
+        }
+    }

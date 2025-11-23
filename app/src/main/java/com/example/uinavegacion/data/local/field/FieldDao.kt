@@ -17,5 +17,8 @@ interface FieldDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE) // Si hay conflictos, reemplaza los existentes
     suspend fun insertAll(fields: List<FieldEntity>)
+
+    @Insert
+    suspend fun insertField(field: FieldEntity)
 }
 

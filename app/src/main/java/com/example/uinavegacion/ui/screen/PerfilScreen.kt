@@ -1,8 +1,13 @@
 package com.example.uinavegacion.ui.screen
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -21,20 +26,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.uinavegacion.data.local.Storage.UserPreferences
 import com.example.uinavegacion.ui.components.ReservaItem
 import com.example.uinavegacion.ui.viewmodel.AuthViewModel
 import com.example.uinavegacion.ui.viewmodel.BookingViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun PerfilScreen(
@@ -45,7 +59,7 @@ fun PerfilScreen(
     val profileState by authViewModel.profile.collectAsStateWithLifecycle()
     val bookings by bookingViewModel.userBookings.collectAsStateWithLifecycle()
 
-    // Cargar datos del usuario + reservas al entrar
+
     LaunchedEffect(userId) {
         if (userId != null) {
             authViewModel.loadUserById(userId)
@@ -62,14 +76,14 @@ fun PerfilScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // LOADING
+
         if (profileState.isLoading) {
             CircularProgressIndicator()
             Text("Cargando perfil...")
             return
         }
 
-        // ERROR
+
         profileState.errorMsg?.let {
             Text(text = it, color = Color.Red, fontSize = 18.sp)
             return
@@ -120,8 +134,7 @@ fun PerfilScreen(
             } else {
                 bookings.forEach { reserva ->
                     ReservaItem(reserva = reserva, onDelete = { bookingId ->
-                        bookingViewModel.deleteBooking(bookingId)
-                        // Opcional: recargar las reservas para refrescar la lista
+                        bookingViewModel.deleteBooking(bookingId = reserva.id )
                         userId?.let { bookingViewModel.loadBookingsByUser(it) }
                     })
                 }

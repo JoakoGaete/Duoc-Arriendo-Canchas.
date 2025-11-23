@@ -91,7 +91,7 @@ class BookingViewModel(
             try {
                 val booking = BookingEntity(
                     userId = userId,
-                    fielid = state.fieldId!!,
+                    fieldId = state.fieldId!!,
                     bookingDate = state.bookingDate,
                     startTime = state.startTime,
                     status = "pendiente"

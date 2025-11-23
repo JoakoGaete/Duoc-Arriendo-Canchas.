@@ -19,19 +19,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Database(
-    // Añadimos las nuevas entidades a la lista
     entities = [UserEntity::class, FieldEntity::class, BookingEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    //Dao de usuarios
     abstract fun userDao(): UserDao
-
-    //Daos de canchas y reservas
     abstract fun fieldDao(): FieldDao
-
     abstract fun bookingDao(): BookingDao
 
     companion object {
@@ -49,50 +44,45 @@ abstract class AppDatabase : RoomDatabase() {
                     .addCallback(object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
-                            // La precarga ahora se hace en una corrutina
                             CoroutineScope(Dispatchers.IO).launch {
-                                val database = getInstance(context)
-
-                                // --- 4. PRECARGA DE DATOS ---
-                                // A. Precarga de usuarios
+                                // Usamos la instancia ya creada
+                                val database = INSTANCE ?: return@launch
                                 preloadUsers(database.userDao())
-                                // B. Precarga de canchas
                                 preloadFields(database.fieldDao())
                             }
                         }
                     })
-                    .fallbackToDestructiveMigration() // Mantenemos esto
+                    .fallbackToDestructiveMigration()
                     .build()
-
                 INSTANCE = instance
                 instance
             }
         }
 
-
-        // Precarga de usuarios
         private suspend fun preloadUsers(userDao: UserDao) {
             val seedUsers = listOf(
                 UserEntity(
                     name = "Admin",
                     email = "admin@duoc.cl",
                     phone = "+56911111111",
-                    password = "Admin123!"
+                    password = "Admin123!",
+                    isAdmin = true
                 ),
                 UserEntity(
                     name = "Víctor Rosendo",
                     email = "victor@duoc.cl",
                     phone = "+56922222222",
-                    password = "123456"
+                    password = "123456",
+                    isAdmin = false
                 )
             )
-            // Inserta solo si no hay usuarios
-            if (userDao.count() == 0) {
-                seedUsers.forEach { userDao.insert(it) }
+
+            seedUsers.forEach { user ->
+                // Inserta o reemplaza si ya existe
+                userDao.insert(user)
             }
         }
 
-        // Precarga de canchas
         private suspend fun preloadFields(fieldDao: FieldDao) {
             val seedFields = listOf(
                 FieldEntity(
@@ -120,7 +110,12 @@ abstract class AppDatabase : RoomDatabase() {
                     imageUrl = "cancha3"
                 )
             )
-            fieldDao.insertAll(seedFields)
+
+            seedFields.forEach { field ->
+                // Inserta o reemplaza si ya existe
+                fieldDao.insertField(field)
+            }
         }
     }
 }
+

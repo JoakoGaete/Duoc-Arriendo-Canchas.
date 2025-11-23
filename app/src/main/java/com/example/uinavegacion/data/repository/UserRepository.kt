@@ -9,68 +9,63 @@ import com.example.uinavegacion.data.local.user.UserEntity    // Entidad de usua
 
 // Repositorio: orquesta reglas de negocio para login/registro sobre el DAO.
 class UserRepository(
-    private val userDao: UserDao, // Inyección del DAO
+    private val userDao: UserDao,
     private val bookingDao: BookingDao,
     private val fieldDao: FieldDao
-
 ) {
 
-    // Login: busca por email y valida contraseña
+    // --- USUARIOS ---
     suspend fun login(email: String, password: String): Result<UserEntity> {
-        val user = userDao.getByEmail(email)                         // Busca usuario
-        return if (user != null && user.password == password) {      // Verifica pass
-            Result.success(user)                                     // Éxito
+        val user = userDao.getByEmail(email)
+        return if (user != null && user.password == password) {
+            Result.success(user)
         } else {
-            Result.failure(IllegalArgumentException("Credenciales inválidas")) // Error
+            Result.failure(IllegalArgumentException("Credenciales inválidas"))
         }
     }
 
-    // Registro: valida no duplicado y crea nuevo usuario (con teléfono)
     suspend fun register(name: String, email: String, phone: String, password: String): Result<Long> {
-        val exists = userDao.getByEmail(email) != null               // ¿Correo ya usado?
-        if (exists) {
-            return Result.failure(IllegalStateException("El correo ya está registrado"))
-        }
-        val id = userDao.insert(                                     // Inserta nuevo
-            UserEntity(
-                name = name,
-                email = email,
-                phone = phone,                                       // Teléfono incluido
-                password = password
-            )
+        val exists = userDao.getByEmail(email) != null
+        if (exists) return Result.failure(IllegalStateException("El correo ya está registrado"))
+
+        val id = userDao.insert(
+            UserEntity(name = name, email = email, phone = phone, password = password)
         )
-        return Result.success(id)                                    // Devuelve ID generado
-    }
-    suspend fun getUserById(id: Long): UserEntity? {
-        return userDao.getById(id)
+        return Result.success(id)
     }
 
+    suspend fun getUserById(id: Long): UserEntity? = userDao.getById(id)
+
+    // --- RESERVAS ---
     suspend fun insertBooking(booking: BookingEntity) {
-        // Obtenemos todas las reservas del mismo día y cancha
         val existing = bookingDao.getBookingsForFieldOnDate(booking.fieldId, booking.bookingDate)
 
-        // Convertimos startTime de String a minutos desde la medianoche para comparar
         val requestedMinutes = booking.startTime.split(":").let { it[0].toInt() * 60 + it[1].toInt() }
 
         val conflict = existing.any {
             val existingMinutes = it.startTime.split(":").let { t -> t[0].toInt() * 60 + t[1].toInt() }
-            kotlin.math.abs(existingMinutes - requestedMinutes) < 60 // menos de 60 min = conflicto
+            kotlin.math.abs(existingMinutes - requestedMinutes) < 60
         }
 
-        if (conflict) {
-            throw Exception("La cancha ya está reservada cerca de esa hora")
-        }
+        if (conflict) throw Exception("La cancha ya está reservada cerca de esa hora")
 
         bookingDao.insert(booking)
     }
-    suspend fun getBookingsByUserId(userId: Long): List<BookingEntity> {
-        return bookingDao.getBookingsByUser(userId)
-    }
-    suspend fun deleteBooking(booking: BookingEntity) {
-        bookingDao.deleteBookingById(booking.id)
+
+    suspend fun getBookingsByUserId(userId: Long): List<BookingEntity> =
+        bookingDao.getBookingsByUser(userId)
+
+    suspend fun deleteBooking(bookingId: Long) {
+        bookingDao.deleteBookingById(bookingId)
     }
 
+    // --- CANCHAS ---
     suspend fun getAllFields(): List<FieldEntity> = fieldDao.getAllFields()
 
-    companion object
+    suspend fun addField(field: FieldEntity) {
+        fieldDao.insertField(field)
+    }
+
+    // --- ADMIN: TODAS LAS RESERVAS ---
+    suspend fun getAllBookings(): List<BookingEntity> = bookingDao.getAllBookings()
 }

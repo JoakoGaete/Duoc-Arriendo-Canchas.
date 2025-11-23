@@ -53,5 +53,15 @@ class UserPreferences (private val context: Context){
         .map { prefs ->
             prefs[profilePhotoKey]
         }
+    private val isAdminKey = booleanPreferencesKey("is_admin")
+
+    val isAdmin: Flow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[isAdminKey] ?: false }
+
+    suspend fun setAdmin(value: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[isAdminKey] = value
+        }
+    }
 
 }

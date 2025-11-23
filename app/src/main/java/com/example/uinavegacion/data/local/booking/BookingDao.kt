@@ -14,15 +14,15 @@ interface BookingDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(booking: BookingEntity)
 
-
+    @Query("SELECT * FROM bookings")
+    fun getAllBookings():List<BookingEntity>
 
     // Obtiene todas las reservas para una cancha en una fecha
     @Query("SELECT * FROM bookings WHERE fieldId = :fieldId AND bookingDate = :date")
     fun getBookingsForFieldOnDate(fieldId: Int, date: String):List<BookingEntity>
     @Query("SELECT * FROM bookings WHERE userId = :userId ORDER BY bookingDate DESC")
     suspend fun getBookingsByUser(userId: Long): List<BookingEntity>
-    @Delete
-    suspend fun deleteBooking(booking: BookingEntity)
+
 
     @Query("DELETE FROM bookings WHERE id = :bookingId")
     suspend fun deleteBookingById(bookingId: Long)

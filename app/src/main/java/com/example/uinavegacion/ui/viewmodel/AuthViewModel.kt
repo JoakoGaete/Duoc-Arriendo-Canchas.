@@ -131,6 +131,9 @@ class AuthViewModel(
             }
         }
     }
+    fun clearLoginState() {
+        _login.value = LoginUiState() // LoginState() es el estado inicial con email="" y pass=""
+    }
 
 
     fun clearLoginResult() {                                // Limpia banderas tras navegar

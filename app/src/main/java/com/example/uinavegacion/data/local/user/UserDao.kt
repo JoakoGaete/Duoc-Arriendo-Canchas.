@@ -10,8 +10,9 @@ import androidx.room.Query                     // Para queries SQL
 interface UserDao {
 
     // Inserta un usuario. ABORT si hay conflicto de PK (no de email; ese lo controlamos a mano).
-    @Insert(onConflict = OnConflictStrategy.ABORT)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(user: UserEntity): Long
+
 
     // Devuelve un usuario por email (o null si no existe).
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
