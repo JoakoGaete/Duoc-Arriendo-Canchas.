@@ -41,6 +41,9 @@ class UserRepository(
         )
         return Result.success(id)                                    // Devuelve ID generado
     }
+    suspend fun getUserById(id: Long): UserEntity? {
+        return userDao.getById(id)
+    }
 
     suspend fun insertBooking(booking: BookingEntity) {
         // Obtenemos todas las reservas del mismo día y cancha
@@ -60,10 +63,14 @@ class UserRepository(
 
         bookingDao.insert(booking)
     }
+    suspend fun getBookingsByUserId(userId: Long): List<BookingEntity> {
+        return bookingDao.getBookingsByUser(userId)
+    }
+    suspend fun deleteBooking(booking: BookingEntity) {
+        bookingDao.deleteBookingById(booking.id)
+    }
 
     suspend fun getAllFields(): List<FieldEntity> = fieldDao.getAllFields()
-
-
 
     companion object
 }

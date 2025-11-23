@@ -51,6 +51,11 @@ data class RegisterUiState(                                // Estado de la panta
     val success: Boolean = false,                          // Resultado OK
     val errorMsg: String? = null                           // Error global (ej: duplicado)
 )
+data class ProfileUiState(
+    val isLoading: Boolean = false,
+    val user: UserEntity? = null,
+    val errorMsg: String? = null
+)
 
 
 // ----------------- COLECCIÓN EN MEMORIA (solo para la demo) -----------------
@@ -67,7 +72,10 @@ class AuthViewModel(
 
     // Flujos de estado para observar desde la UI
     private val _login = MutableStateFlow(LoginUiState())   // Estado interno (Login)
-    val login: StateFlow<LoginUiState> = _login             // Exposición inmutable
+    val login: StateFlow<LoginUiState> = _login // Exposición inmutable
+
+    private val _profile = MutableStateFlow(ProfileUiState())
+    val profile: StateFlow<ProfileUiState> = _profile
 
     private val _register = MutableStateFlow(RegisterUiState()) // Estado interno (Registro)
     val register: StateFlow<RegisterUiState> = _register        // Exposición inmutable
@@ -110,11 +118,12 @@ class AuthViewModel(
 
             //6.- Se cambia lo anterior por esto ✅ NUEVO: consulta real a la BD vía repositorio
             val result = repository.login(s.email.trim(), s.pass)
+            val user = result.getOrNull()
 
             // Interpreta el resultado y actualiza estado
             _login.update {
-                if (result.isSuccess) {
-                    it.copy(isSubmitting = false, success = true, errorMsg = null) // OK: éxito
+                if (result.isSuccess && user != null) {
+                    it.copy(isSubmitting = false, success = true, errorMsg = null, user = user ) // OK: éxito
                 } else {
                     it.copy(isSubmitting = false, success = false,
                         errorMsg = result.exceptionOrNull()?.message ?: "Error de autenticación")
@@ -249,4 +258,35 @@ class AuthViewModel(
             _fields.value = repository.getAllFields() // suspend fun devuelve List<FieldEntity>
         }
     }
+    fun loadUserById(userId: Long) {
+        viewModelScope.launch {
+            _profile.update { it.copy(isLoading = true, errorMsg = null) }
+
+            try {
+                val user = repository.getUserById(userId)
+
+                _profile.update {
+                    it.copy(
+                        isLoading = false,
+                        user = user,
+                        errorMsg = null
+                    )
+                }
+
+            } catch (e: Exception) {
+                _profile.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMsg = "No se pudo cargar el perfil"
+                    )
+                }
+            }
+        }
+
+    }
+
+
+
+
+
 }

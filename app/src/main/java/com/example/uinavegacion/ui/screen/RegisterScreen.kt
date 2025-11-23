@@ -14,6 +14,7 @@ import androidx.compose.material3.*                           // Material 3
 import androidx.compose.runtime.*                             // remember, Composable
 import androidx.compose.ui.Alignment                          // Alineaciones
 import androidx.compose.ui.Modifier                           // Modificador
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.*                       // KeyboardOptions/Types/Transformations
@@ -122,7 +123,8 @@ private fun RegisterScreen(
             )
             Text(
                 text = "Registro",
-                style = MaterialTheme.typography.headlineSmall // Título
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color(0xFF26B21E)// Título
             )
             Spacer(Modifier.height(12.dp)) // Separación
 
@@ -233,14 +235,16 @@ private fun RegisterScreen(
             Button(
                 onClick = onSubmit,                          // Intenta registrar (inserta en la colección)
                 enabled = canSubmit && !isSubmitting,        // Solo si todo es válido y no cargando
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(
+                    0xFF218D1B))
             ) {
                 if (isSubmitting) {                          // Muestra loading mientras “procesa”
                     CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Creando cuenta...")
                 } else {
-                    Text("Registrar")
+                    Text("Registrar", color = Color(0xFF218D1B))
                 }
             }
 
@@ -253,7 +257,7 @@ private fun RegisterScreen(
 
             // ---------- BOTÓN IR A LOGIN ----------
             OutlinedButton(onClick = onGoLogin, modifier = Modifier.fillMaxWidth()) {
-                Text("Ir a Login")
+                Text("Ir a iniciar sesion")
             }
             Image(
                 painter = painter2,

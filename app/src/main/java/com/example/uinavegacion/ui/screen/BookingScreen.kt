@@ -1,5 +1,6 @@
 package com.example.uinavegacion.ui.screen
 
+import android.R
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
@@ -18,12 +19,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTimeFilled
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -57,6 +62,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.uinavegacion.data.local.Storage.UserPreferences
 
 import com.example.uinavegacion.ui.viewmodel.BookingUiState
 import com.example.uinavegacion.ui.viewmodel.BookingViewModel
@@ -90,6 +96,10 @@ fun BookingScreen(
     val context = LocalContext.current
     var photoUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCaptureUri by remember { mutableStateOf<Uri?>(null) }
+    val userPrefrs = remember { UserPreferences(context) }
+    val isLoggedIn by  userPrefrs.isLoggedIn.collectAsStateWithLifecycle(false)
+    val userId by userPrefrs.userId.collectAsState(initial = null)
+
 
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -110,13 +120,14 @@ fun BookingScreen(
         }
     }
 
-    // --- Layout principal ---
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .background(Color.White)
             .padding(16.dp)
     ) {
+
         Text(
             text = "Reserva Cancha",
             style = MaterialTheme.typography.headlineSmall,
@@ -125,16 +136,21 @@ fun BookingScreen(
 
         Spacer(Modifier.height(16.dp))
 
+        if (!isLoggedIn){Text(text = "Recuerda iniciar sesion para poder reservar ",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold)}
+
+
         // ---------- Selector de Cancha ----------
         var expanded by remember { mutableStateOf(false) }
         Box {
             OutlinedTextField(
-                value = state.fieldId?.let { it.toString() } ?: "",
+                value = state.fieldId?.toString() ?: "",
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Cancha") },
                 placeholder = { Text("Selecciona cancha") },
-                leadingIcon = { Icon(Icons.Default.SportsSoccer, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.SportsSoccer, contentDescription = null, tint =Color(0xFF2E811F))},
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = true }
@@ -160,7 +176,7 @@ fun BookingScreen(
             onValueChange = {},
             readOnly = true,
             label = { Text("Fecha") },
-            leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+            leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null, tint = Color(0xFF2E811F)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
@@ -197,7 +213,10 @@ fun BookingScreen(
             onValueChange = {},
             readOnly = true,
             label = { Text("Hora") },
-            leadingIcon = { Icon(Icons.Default.AccessTimeFilled, contentDescription = null) },
+            leadingIcon = { Icon(Icons.Default.AccessTimeFilled, contentDescription = null, tint = Color(
+                0xFF2E811F
+            )
+            ) },
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
@@ -226,9 +245,14 @@ fun BookingScreen(
 
         // ---------- Botón Reservar ----------
         Button(
-            onClick = onSubmit,
-            enabled = state.canSubmit && !state.isSubmitting,
-            modifier = Modifier.fillMaxWidth()
+            onClick = {userId?.let { vm.submitBooking(it) } },
+            enabled = state.canSubmit && !state.isSubmitting && photoUriString != null && isLoggedIn,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF1CB04C),
+                contentColor = Color.White
+            )
+
         ) {
             if (state.isSubmitting) {
                 CircularProgressIndicator(
@@ -239,7 +263,7 @@ fun BookingScreen(
                 Spacer(Modifier.width(8.dp))
                 Text("Reservando...")
             } else {
-                Text("Reservar")
+                Text("Reservar",color = Color.White)
             }
         }
 
@@ -249,8 +273,9 @@ fun BookingScreen(
         }
 
         Spacer(Modifier.height(32.dp))
+        var showDialog by remember { mutableStateOf(false) }
 
-        // ---------- Sección de Cámara ----------
+        // ---------- CARD de la cámara ----------
         ElevatedCard(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -258,21 +283,25 @@ fun BookingScreen(
                 modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
                 Text(
-                    text = "Por favror agrega una foto de tu cedula de identidad",
+                    text = "Por favor agrega una foto de tu cédula de identidad",
                     style = MaterialTheme.typography.titleMedium,
                     textAlign = TextAlign.Center
                 )
 
                 Spacer(Modifier.height(12.dp))
 
+                // ---- FOTO ----
                 if (photoUriString.isNullOrEmpty()) {
+
                     Text(
                         text = "No hay foto",
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    Spacer(Modifier.height(12.dp))
+
                 } else {
+
                     AsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(Uri.parse(photoUriString))
@@ -281,56 +310,60 @@ fun BookingScreen(
                         contentDescription = "Foto Tomada",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(150.dp),
+                            .height(400.dp),     // ← FOTO GRANDE
                         contentScale = ContentScale.Crop
                     )
-                    Spacer(Modifier.height(12.dp))
                 }
 
-                var showDialog by remember { mutableStateOf(false) }
+                Spacer(Modifier.height(12.dp))
 
+                // ---- Botón Cámara ----
                 Button(onClick = {
                     val file = createTempImageFile(context)
                     val uri = getImageUriForFile(context, file)
                     pendingCaptureUri = uri
                     takePictureLauncher.launch(uri)
-                }) {
+                },colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF1CB04C),
+                    contentColor = Color.White)) {
                     Text(
                         if (photoUriString.isNullOrEmpty()) "Abrir Cámara"
                         else "Volver a tomar"
                     )
                 }
 
+                // ---- Botón de eliminar ----
                 if (!photoUriString.isNullOrEmpty()) {
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedButton(onClick = { showDialog = true }) {
-                        Text("Eliminar Foto")
-                    }
-                }
 
-                if (showDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showDialog = false },
-                        title = { Text("Confirmación") },
-                        text = { Text("¿Desea eliminar la foto?") },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                photoUriString = null
-                                showDialog = false
-                                Toast.makeText(context, "Foto eliminada", Toast.LENGTH_SHORT)
-                                    .show()
-                            }) {
-                                Text("Aceptar")
+                    Spacer(Modifier.height(12.dp))
+
+                    OutlinedButton(onClick = { showDialog = true }) {
+                        Text("Eliminar Foto", color = Color(0xFF1CB04C))
+                    }
+
+                    if (showDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showDialog = false },
+                            title = { Text("Confirmación") },
+                            text = { Text("¿Desea eliminar la foto?") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    photoUriString = null
+                                    showDialog = false
+                                    Toast.makeText(context, "Foto eliminada", Toast.LENGTH_SHORT)
+                                        .show()
+                                }) { Text("Aceptar", color = Color(0xFF1CB04C)) }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDialog = false }) { Text("Cancelar", color = Color(0xFF1CB04C)) }
                             }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showDialog = false }) {
-                                Text("Cancelar")
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
     }
 }
+
+
+

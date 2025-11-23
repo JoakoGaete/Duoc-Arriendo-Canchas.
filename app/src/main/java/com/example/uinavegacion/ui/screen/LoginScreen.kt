@@ -1,28 +1,28 @@
 package com.example.uinavegacion.ui.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background                 // Fondo
-import androidx.compose.foundation.layout.*                   // Box/Column/Row/Spacer
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons                  // Íconos Material
-import androidx.compose.material.icons.filled.Visibility      // Ícono mostrar contraseña
-import androidx.compose.material.icons.filled.VisibilityOff   // Ícono ocultar contraseña
-import androidx.compose.material3.*                           // Material 3
-import androidx.compose.runtime.*                             // remember y Composable
-import androidx.compose.ui.Alignment                          // Alineaciones
-import androidx.compose.ui.Modifier                           // Modificador
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.*                       // KeyboardOptions/Types/Transformations
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp                            // DPs
-import androidx.lifecycle.compose.collectAsStateWithLifecycle // Observa StateFlow con lifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel         // Obtiene ViewModel
-import com.example.uinavegacion.data.local.Storage.UserPreferences
-import com.example.uinavegacion.ui.viewmodel.AuthViewModel         // Nuestro ViewModel
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.uinavegacion.R
+import com.example.uinavegacion.data.local.Storage.UserPreferences
+import com.example.uinavegacion.ui.viewmodel.AuthViewModel
 
 
 //1 Lo primero que creamos en el archivo
@@ -34,16 +34,28 @@ fun LoginScreenVm(
 ) {
     val context = LocalContext.current
     //traer el DataStore
+
     val userPrefrs = remember { UserPreferences(context) }
+
 
     val state by vm.login.collectAsStateWithLifecycle()      // Observa el StateFlow en tiempo real
 
     LaunchedEffect(state.success) {
         if (state.success) { // Si login fue exitoso…
             userPrefrs.setLoggedIn(true)
-            vm.clearLoginResult()                                // Limpia banderas
-            onLoginOkNavigateHome()                              // Navega a Home
+
+            state.user?.let { user ->
+                userPrefrs.setUserId(user.id)
+            }
+            state.user?.let { user ->
+                Toast.makeText(context, "Bienvenido ${user.name}", Toast.LENGTH_SHORT).show()
+            }
+            vm.clearLoginResult()
+            onLoginOkNavigateHome()
         }
+
+            // Limpia banderas
+
     }
 
     LoginScreen(                                             // Delegamos a UI presentacional
@@ -106,7 +118,7 @@ private fun LoginScreen(
                 contentScale = ContentScale.Fit
             )
             Text(
-                text = "Login",
+                text = "Inicio de sesion",
                 style = MaterialTheme.typography.headlineSmall // Título
             )
             Spacer(Modifier.height(12.dp)) // Separación
@@ -128,7 +140,7 @@ private fun LoginScreen(
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email        // Teclado de email
                 ),
-                modifier = Modifier.fillMaxWidth()           // Ancho completo
+                modifier = Modifier.fillMaxWidth()
             )
             if (emailError != null) {                        // Muestra mensaje si hay error
                 Text(emailError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
@@ -164,7 +176,8 @@ private fun LoginScreen(
             Button(
                 onClick = onSubmit,                          // Envía login
                 enabled = canSubmit && !isSubmitting,        // Solo si válido y no cargando
-                modifier = Modifier.fillMaxWidth()           // Ancho completo
+                modifier = Modifier.fillMaxWidth()  ,
+                colors = ButtonDefaults.buttonColors(Color(0xFF2E811F ))// Ancho completo
             ) {
                 if (isSubmitting) {                          // UI de carga
                     CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
@@ -183,8 +196,11 @@ private fun LoginScreen(
             Spacer(Modifier.height(12.dp))                   // Espacio
 
             // ---------- BOTÓN IR A REGISTRO ----------
-            OutlinedButton(onClick = onGoRegister, modifier = Modifier.fillMaxWidth()) {
-                Text("Crear cuenta")
+            OutlinedButton(onClick = onGoRegister, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(
+                0xFF218D1B
+            )
+            )) {
+                Text("Crear cuenta",color = Color(0xFF124933))
             }
             //fin modificacion de formulario
         }

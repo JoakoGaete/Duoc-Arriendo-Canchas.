@@ -1,5 +1,6 @@
 package com.example.uinavegacion.ui.screen
 
+import android.R
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
@@ -99,16 +100,20 @@ fun HomeScreen(
                         text = "Inicio",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color(0xFF20A239)
                     )
                     Spacer(Modifier.width(8.dp))
 
                     AssistChip(
                         onClick = {},
-                        label = { Text("Arrienda las mejores canchas de Fútbol aquí, presiona una cancha y procede a arrendar o navega por la app como gustes!!!",
-                            style = MaterialTheme.typography.bodyMedium)},
+                        label = {
+                            Text(
+                                "Arrienda las mejores canchas de Fútbol aquí, presiona una cancha y procede a arrendar o navega por la app como gustes!!!",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
 
-                    )
+                        )
                 }
 
                 Spacer(Modifier.height(20.dp))
@@ -128,32 +133,14 @@ fun HomeScreen(
                 // Botones al final
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
 
-                    // Botón de Login / Logout
-                    Button(
-                        onClick = {
-                            if (isLoggedIn) {
-                                scope.launch {
-                                    userPrefs.logout()
-                                    Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
-                                }
-                            } else {
-                                onGoLogin()
-                            }
-                        }
-                    ) {
-                        Text(if (isLoggedIn) "Cerrar Sesión" else "Iniciar Sesión")
+                    Button(onClick = onGoMapa, colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xED023C46),   // color de fondo
+                        contentColor = Color.LightGray)) {
+                        Text("Ver nuestra ubicación")
                     }
+                }
 
-                    // Botón de registro
-                    OutlinedButton(onClick = onGoRegister) {
-                        Text("Ir a Registro")
-                    }
-                }
-                Button(onClick = onGoMapa) {
-                    Text("Ver nuestra ubicación")
-                }
             }
-
         }
     }
 }

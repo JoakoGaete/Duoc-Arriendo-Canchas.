@@ -12,20 +12,25 @@ import androidx.compose.material3.ModalNavigationDrawer // Drawer lateral modal
 import androidx.compose.material3.rememberDrawerState // Estado del drawer
 import androidx.compose.material3.DrawerValue // Valores (Opened/Closed)
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope // Alcance de corrutina
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.uinavegacion.data.local.Storage.UserPreferences
 
 
 import com.example.uinavegacion.ui.components.AppTopBar // Barra superior
 import com.example.uinavegacion.ui.components.AppDrawer // Drawer composable
-import com.example.uinavegacion.ui.components.defaultDrawerItems // Ítems por defecto
+import com.example.uinavegacion.ui.components.DrawerContent
+
 import com.example.uinavegacion.ui.viewmodel.BookingScreenVm
 import com.example.uinavegacion.ui.screen.HomeScreen // Pantalla Home
 import com.example.uinavegacion.ui.screen.LoginScreenVm // Pantalla Login
 import com.example.uinavegacion.ui.screen.RegisterScreenVm // Pantalla Registro
 import com.example.uinavegacion.ui.screen.BookingScreen
 import com.example.uinavegacion.ui.screen.MapaScreen
+import com.example.uinavegacion.ui.screen.PerfilScreen
 import com.example.uinavegacion.ui.viewmodel.AuthViewModel
 
 import com.example.uinavegacion.ui.viewmodel.BookingViewModel
@@ -39,6 +44,9 @@ fun AppNavGraph(navController: NavHostController,
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed) // Estado del drawer
     val scope = rememberCoroutineScope() // Necesario para abrir/cerrar drawer
     val bookingViewModel: BookingViewModel = viewModel()
+    val context = LocalContext.current
+    val prefs = remember { UserPreferences(context) }
+    val isLoggedIn by prefs.isLoggedIn.collectAsStateWithLifecycle(false)
 
 
     // Helpers de navegación (reutilizamos en topbar/drawer/botones)
@@ -47,36 +55,45 @@ fun AppNavGraph(navController: NavHostController,
     val goRegister: () -> Unit = { navController.navigate(Route.Register.path) } // Ir a Registro
     val goBooking: () -> Unit = { navController.navigate(Route.Booking.path) } // Ir a arrendar
     val goMapa: () -> Unit = { navController.navigate(Route.Mapa.path) } // Ir a mapa
+    val goProfile: () -> Unit = { navController.navigate(Route.Perfil.path) } // Ir a perfil
 
 
 
-    ModalNavigationDrawer( // Capa superior con drawer lateral
-        drawerState = drawerState, // Estado del drawer
-        drawerContent = { // Contenido del drawer (menú)
-            AppDrawer( // Nuestro componente Drawer
-                currentRoute = null, // Puedes pasar navController.currentBackStackEntry?.destination?.route
-                items = defaultDrawerItems( // Lista estándar
-                    onHome = {
-                        scope.launch { drawerState.close() } // Cierra drawer
-                        goHome() // Navega a Home
-                    },
-                    onLogin = {
-                        scope.launch { drawerState.close() } // Cierra drawer
-                        goLogin() // Navega a Login
-                    },
-                    onRegister = {
-                        scope.launch { drawerState.close() } // Cierra drawer
-                        goRegister() // Navega a Registro
-                    },
-                    onBooking = {
-                        scope.launch { drawerState.close() }
-                        goBooking()
-                    },
-                    onMapa = {
-                        scope.launch { drawerState.close() }
-                        goMapa()
-                    }
-                )
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DrawerContent (
+                isLoggedIn = isLoggedIn,
+                onHome = {
+                    scope.launch { drawerState.close() }
+                    goHome()
+                },
+                onLogin = {
+                    scope.launch { drawerState.close() }
+                    goLogin()
+                },
+                onRegister = {
+                    scope.launch { drawerState.close() }
+                    goRegister()
+                },
+                onLogout = {
+                    scope.launch { drawerState.close()
+                    prefs.setLoggedIn(false)
+                    goHome()}
+                },
+                onBooking = {
+                    scope.launch { drawerState.close() }
+                    goBooking()
+                },
+                onMapa = {
+                    scope.launch { drawerState.close() }
+                    goMapa()
+                },
+                onProfile = {
+                    scope.launch { drawerState.close() }
+                    goProfile()
+                }
             )
         }
     ) {
@@ -88,7 +105,8 @@ fun AppNavGraph(navController: NavHostController,
                     onLogin = goLogin,   // Botón Login
                     onRegister = goRegister, // Botón Registro
                     onBooking = goBooking,
-                    onMapa = goMapa
+                    onMapa = goMapa,
+                    onPerfil = goProfile
                 )
             }
         ) { innerPadding -> // Padding que evita solapar contenido
@@ -139,6 +157,13 @@ fun AppNavGraph(navController: NavHostController,
                     }
                 composable(Route.Mapa.path) {
                     MapaScreen()
+                }
+                composable(Route.Perfil.path) {
+                    PerfilScreen(
+                        userId = prefs.userId.collectAsStateWithLifecycle(null).value,
+                        authViewModel = authViewModel,
+                        bookingViewModel = bookingViewModel
+                    )
                 }
             }
         }

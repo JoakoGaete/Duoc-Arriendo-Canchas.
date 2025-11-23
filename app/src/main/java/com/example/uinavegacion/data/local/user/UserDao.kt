@@ -24,4 +24,7 @@ interface UserDao {
     // Lista completa (útil para debug/administración).
     @Query("SELECT * FROM users ORDER BY id ASC")
     suspend fun getAll(): List<UserEntity>
+
+    @Query("SELECT * FROM users WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): UserEntity?
 }

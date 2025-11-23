@@ -12,7 +12,8 @@ fun validateEmail(email: String): String? {                            // Retorn
 // Valida que el nombre contenga solo letras y espacios (sin números)
 fun validateNameLettersOnly(name: String): String? {                   // Valida nombre
     if (name.isBlank()) return "El nombre es obligatorio"              // Regla 1: no vacío
-    val regex = Regex("^[A-Za-zÁÉÍÓÚÑáéíóúñ ]+$")                      // Regla 2: solo letras y espacios (con tildes/ñ)
+    val regex = Regex("^[A-Za-zÁÉÍÓÚÑáéíóúñ ]+$") // Regla 2: solo letras y espacios (con tildes/ñ)
+    if (name.length < 2) return "El nombre debe tener al menos 2 caracteres"
     return if (!regex.matches(name)) "Solo letras y espacios" else null// Mensaje si falla
 }
 

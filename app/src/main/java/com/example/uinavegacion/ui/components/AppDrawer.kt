@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons // Íconos Material
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home // Ícono Home
 import androidx.compose.material.icons.filled.AccountCircle // Ícono Login
 import androidx.compose.material.icons.filled.BookmarkAdded
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person // Ícono Registro
 import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.SportsSoccer
@@ -20,11 +22,16 @@ import androidx.compose.material3.NavigationDrawerItemDefaults // Defaults de es
 import androidx.compose.material3.Text // Texto
 import androidx.compose.material3.ModalDrawerSheet // Contenedor de contenido del drawer
 import androidx.compose.runtime.Composable // Marcador composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier // Modificador
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector // Tipo de ícono
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.uinavegacion.data.local.Storage.UserPreferences
 
 // Pequeña data class para representar cada opción del drawer
 data class DrawerItem( // Estructura de un ítem de menú lateral
@@ -51,7 +58,7 @@ fun AppDrawer(
             Icon(
                 imageVector = Icons.Default.SportsSoccer,
                 contentDescription = "Icono balon",
-                tint = MaterialTheme.colorScheme.primary,
+                tint = Color(0xFF219149),
                 modifier = Modifier.size(24.dp)
             )
 
@@ -60,7 +67,7 @@ fun AppDrawer(
             Text(
                 text = "Canchas Duoc",
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
+                color = Color(0xFF078632)
             )
         }
         // Recorremos las opciones y pintamos ítems
@@ -76,19 +83,65 @@ fun AppDrawer(
         }
     }
 }
-
-// Helper para construir la lista estándar de ítems del drawer
 @Composable
-fun defaultDrawerItems(
-    onHome: () -> Unit,   // Acción Home
-    onLogin: () -> Unit,  // Acción Login
-    onRegister: () -> Unit, // Acción Registro
+fun DrawerContent(
+    isLoggedIn: Boolean,
+    onHome: () -> Unit,
+    onLogin: () -> Unit,
+    onRegister: () -> Unit,
+    onLogout: () -> Unit,
     onBooking: () -> Unit,
+    onMapa: () -> Unit,
+    onProfile: () -> Unit,
+
+) {
+    val context = LocalContext.current
+    val prefs = remember(context) { UserPreferences(context) }
+
+    val isLoggedIn by prefs.isLoggedIn
+        .collectAsStateWithLifecycle(initialValue = false)
+
+    val items =
+        if (isLoggedIn)
+            drawerItemsLoggedIn(
+                onHome = onHome,
+                onBooking = onBooking,
+                onMapa = onMapa,
+                onProfile = onProfile,
+                onLogout = onLogout
+            )
+        else
+            drawerItemsLoggedOut(
+                onHome = onHome,
+                onLogin = onLogin,
+                onRegister = onRegister,
+                onMapa = onMapa
+            )
+
+    AppDrawer(currentRoute = null, items = items)
+}
+fun drawerItemsLoggedOut(
+    onHome: () -> Unit,
+    onLogin: () -> Unit,
+    onRegister: () -> Unit,
     onMapa: () -> Unit
 ): List<DrawerItem> = listOf(
-    DrawerItem("Home", Icons.Filled.Home, onHome),          // Ítem Home
-    DrawerItem("Login", Icons.Filled.AccountCircle, onLogin),       // Ítem Login
-    DrawerItem("Registro", Icons.Filled.Person, onRegister), // Ítem Registro
-    DrawerItem("Arrendar", Icons.Filled.BookmarkAdded, onBooking), // Item Arrendar
-    DrawerItem("nuestra Ubicacion", Icons.Filled.PinDrop, onMapa) // Item Arrendar
+    DrawerItem("Inicio", Icons.Filled.Home, onHome),
+    DrawerItem("Iniciar sesión", Icons.Filled.AccountCircle, onLogin),
+    DrawerItem("Registro", Icons.Filled.Person, onRegister),
+    DrawerItem("Ubicación", Icons.Filled.PinDrop, onMapa)
+)
+
+fun drawerItemsLoggedIn(
+    onHome: () -> Unit,
+    onLogout: () -> Unit,
+    onBooking: () -> Unit,
+    onMapa: () -> Unit,
+    onProfile: () -> Unit
+): List<DrawerItem> = listOf(
+    DrawerItem("Inicio", Icons.Filled.Home, onHome),
+    DrawerItem("Mi Perfil", Icons.Filled.AccountCircle, onProfile),
+    DrawerItem("Arrendar", Icons.Filled.BookmarkAdded, onBooking),
+    DrawerItem("Ubicación", Icons.Filled.PinDrop, onMapa),
+    DrawerItem("Cerrar sesión", Icons.AutoMirrored.Filled.ExitToApp, onLogout)
 )

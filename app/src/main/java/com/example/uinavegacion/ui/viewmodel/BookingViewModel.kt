@@ -91,7 +91,7 @@ class BookingViewModel(
             try {
                 val booking = BookingEntity(
                     userId = userId,
-                    fieldId = state.fieldId!!,
+                    fielid = state.fieldId!!,
                     bookingDate = state.bookingDate,
                     startTime = state.startTime,
                     status = "pendiente"
@@ -112,4 +112,26 @@ class BookingViewModel(
     fun clearBookingResult() {
         _booking.update { it.copy(success = false, errorMsg = null) }
     }
+    private val _userBookings = MutableStateFlow<List<BookingEntity>>(emptyList())
+    val userBookings = _userBookings.asStateFlow()
+
+    fun loadBookingsByUser(userId: Long) {
+        viewModelScope.launch {
+            _userBookings.value = repository.getBookingsByUserId(userId)
+        }
+    }
+    fun deleteBooking(bookingId: Long) {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    repository.deleteBooking(bookingId)
+                }
+
+                _booking.update { it.copy(success = true) }
+            } catch (e: Exception) {
+                _booking.update { it.copy(errorMsg = e.message) }
+            }
+        }
+    }
+
 }

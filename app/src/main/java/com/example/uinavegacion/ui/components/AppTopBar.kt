@@ -1,5 +1,6 @@
 package com.example.uinavegacion.ui.components
 
+import android.R
 import androidx.compose.material.icons.Icons // Conjunto de íconos Material
 import androidx.compose.material.icons.filled.Home // Ícono Home
 import androidx.compose.material.icons.filled.AccountCircle // Ícono Login
@@ -19,6 +20,7 @@ import androidx.compose.material3.Text // Texto
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.* // remember / mutableStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,7 +34,8 @@ fun AppTopBar(
     onLogin: () -> Unit,      // Navega a Login
     onRegister: () -> Unit,    // Navega a Registro
     onBooking: () -> Unit,
-    onMapa: ()-> Unit
+    onMapa: ()-> Unit,
+    onPerfil: ()-> Unit
 ) {
     //lo que hace es crear una variable de estado recordada que le dice a la interfaz
     // si el menú desplegable de 3 puntitos debe estar visible (true) o oculto (false).
@@ -44,12 +47,12 @@ fun AppTopBar(
 
     CenterAlignedTopAppBar( // Barra alineada al centro
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer // Color de fondo
+            containerColor = Color.Green
         ),
         title = { // Slot del título
             Text(
                 text = "Arriendo Canchas Duoc", // Título visible
-                style = MaterialTheme.typography.titleLarge, // Estilo grande
+                style = MaterialTheme.typography.titleLarge,// Estilo grande
                 maxLines = 1,              // asegura una sola línea Int.MAX_VALUE   // permite varias líneas
                 overflow = TextOverflow.Ellipsis // agrega "..." si no cabe
 
@@ -67,38 +70,19 @@ fun AppTopBar(
             IconButton(onClick = onBooking) { // Ir a Login
                 Icon(Icons.Filled.BookmarkAdded, contentDescription = "Arrendar") // Ícono Login
             }
-            IconButton(onClick = onLogin) { // Ir a Login
+            IconButton(onClick ={
+                if (isLoggedIn) onPerfil()
+                else onLogin()}) { // Ir a Login o a perfil dependiendo de si se inicio sesion o no
                 Icon(
                     imageVector = if (isLoggedIn) Icons.Filled.Person else Icons.Filled.PersonOff,
                     contentDescription = null,
                     tint = if (isLoggedIn)
-                        MaterialTheme.colorScheme.primary
+                        Color(0xFFF1E404)
                     else
                         MaterialTheme.colorScheme.outline
                 )
             }
 
-            DropdownMenu(
-                expanded = showMenu, // Si está abierto
-                onDismissRequest = { showMenu = false } // Cierra al tocar fuera
-            ) {
-                DropdownMenuItem( // Opción Home
-                    text = { Text("Home") }, // Texto opción
-                    onClick = { showMenu = false; onHome() } // Navega y cierra
-                )
-                DropdownMenuItem( // Opción Login
-                    text = { Text("Login") },
-                    onClick = { showMenu = false; onLogin() }
-                )
-                DropdownMenuItem( // Opción Registro
-                    text = { Text("Registro") },
-                    onClick = { showMenu = false; onRegister() }
-                )
-                DropdownMenuItem( // Opción Arrendar
-                    text = { Text("Arrendar Cancha") },
-                    onClick = { showMenu = false; onBooking() }
-                )
-            }
         }
     )
 }
