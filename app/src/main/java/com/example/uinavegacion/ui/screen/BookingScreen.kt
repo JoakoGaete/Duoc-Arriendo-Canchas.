@@ -1,6 +1,6 @@
 package com.example.uinavegacion.ui.screen
 
-import android.R
+
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
+
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
