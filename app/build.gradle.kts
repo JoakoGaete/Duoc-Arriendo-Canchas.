@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp") version "2.0.21-1.0.25" // <-- AGREGA versión aquí
+
 }
 
 android {
@@ -67,16 +67,34 @@ dependencies {
     // Material icons (necesarios para Visibility / VisibilityOff)
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Room (SQLite) - runtime y extensiones KTX
-    implementation("androidx.room:room-runtime:2.6.1")    // <-- NUEVO
-    implementation("androidx.room:room-ktx:2.6.1")        // <-- NUEVO
 
-    // Compilador de Room vía KSP
-    ksp("androidx.room:room-compiler:2.6.1")               // <-- NUEVO
+
     //carga de imagenes en compose (caché)
     implementation("io.coil-kt:coil-compose:2.7.0")
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     implementation("org.osmdroid:osmdroid-android:6.1.14") // mapa
+
+    // ==== AGREGADOS PARA REST ====
+    // Retrofit base
+    implementation("com.squareup.retrofit2:retrofit:2.11.0") // <-- NUEVO
+    // Convertidor JSON con Gson
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0") // <-- NUEVO
+    // OkHttp y logging interceptor
+    implementation("com.squareup.okhttp3:okhttp:4.12.0") // <-- NUEVO
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0") // <-- NUEVO
+
+    //librerias de test locales
+    testImplementation(libs.junit)
+    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("org.robolectric:robolectric:4.13")
+    //Test de implementacion de UI
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    //reglas adicionales
+    androidTestImplementation("androidx.test:core-ktx:1.5.0")
+    androidTestImplementation("androidx.test:rules:1.5.0")
 }

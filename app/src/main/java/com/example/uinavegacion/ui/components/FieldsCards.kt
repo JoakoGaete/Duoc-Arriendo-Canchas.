@@ -21,13 +21,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.uinavegacion.data.local.field.FieldEntity
+
 
 import com.example.uinavegacion.R
+import com.example.uinavegacion.data.remote.dto.CanchasDto
 
 @Composable
 fun FieldCard(
-    field: FieldEntity,
+    field: CanchasDto,
     onClick: () -> Unit
 ) {
     Card (
@@ -55,12 +56,12 @@ fun FieldCard(
                     .height(160.dp)
             )
             Column(modifier = Modifier.padding(12.dp)) {
-                Text(field.name, style = MaterialTheme.typography.titleMedium)
-                Text(field.type, color = Color.DarkGray, fontSize = 14.sp)
+                Text(field.name ?: "Sin nombre", style = MaterialTheme.typography.titleMedium)
+                Text(field.type ?: "Sin tipo", color = Color.DarkGray, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Ubicación: ${field.location}")
+                Text("Ubicación: ${field.location ?: "Sin ubicación"}")
                 Text(
-                    text = "Precio: $${field.pricePerHour.toInt()} / hora",
+                    text = "Precio: $${field.pricePerHour.toInt() ?: "0"} / hora",
                     fontWeight = FontWeight.Bold
                 )
             }

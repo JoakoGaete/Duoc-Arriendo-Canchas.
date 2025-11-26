@@ -25,69 +25,66 @@ import androidx.navigation.compose.rememberNavController
 import com.example.uinavegacion.R
 import com.example.uinavegacion.data.local.Storage.UserPreferences
 import com.example.uinavegacion.navigation.Route
-import com.example.uinavegacion.ui.viewmodel.AuthViewModel
+
+import com.example.uinavegacion.ui.viewmodel.LoginViewModel
+import com.example.uinavegacion.data.remote.dto.LoginResponse
+
+
 
 
 //1 Lo primero que creamos en el archivo
-@Composable                                                  // Pantalla Login conectada al VM
+@Composable
 fun LoginScreenVm(
-    vm: AuthViewModel,                            // MOD: recibimos el VM desde NavGraph
-    onLoginOkNavigateHome: () -> Unit,                       // Navega a Home cuando el login es exitoso
-    onGoRegister: () -> Unit ,
-    navController: NavHostController// Navega a Registro
+    vm: LoginViewModel,
+    onLoginOkNavigateHome: () -> Unit,
+    onGoRegister: () -> Unit,
+    navController: NavHostController
 ) {
     val context = LocalContext.current
-    //traer el DataStore
+    val prefs = remember { UserPreferences(context) }
 
-    val userPrefrs = remember { UserPreferences(context) }
+    val state by vm.loginState.collectAsStateWithLifecycle()
 
 
-    val state by vm.login.collectAsStateWithLifecycle()      // Observa el StateFlow en tiempo real
-
+    // Resetear estado de login
     LaunchedEffect(state.success) {
-        if (state.success) { // Si login fue exitoso…
-            // Guardar estado de sesión
-            userPrefrs.setLoggedIn(true)
+        state.user?.let { user ->
+            prefs.setLoggedIn(true)
+            prefs.setUserId(user.id)
 
-            state.user?.let { user ->
-                userPrefrs.setUserId(user.id)
-                userPrefrs.setAdmin(user.isAdmin)
-            }
 
-            state.user?.let { user ->
-                Toast.makeText(context, "Bienvenido ${user.name}", Toast.LENGTH_SHORT).show()
-            }
+            Toast.makeText(context, "Bienvenido ${user.name ?: "Invitado"}", Toast.LENGTH_SHORT).show()
 
-            // Lógica de navegación según tipo de usuario
-            state.user?.let { user ->
-                if (user.isAdmin) {
-                    navController.navigate(Route.Admin.path) // <- Admin va al AdminScreen
-                } else {
-                    onLoginOkNavigateHome() // <- Usuario normal va a Home o Perfil
+            if (user.isAdmin) {
+                navController.navigate(Route.Admin.path) {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
                 }
+            } else {
+                onLoginOkNavigateHome()
             }
 
-            vm.clearLoginResult()
+            vm.resetLogin()
         }
     }
 
+    // Aquí llamas a la pantalla presentacional
+    LoginScreen(
+        email = state.email,
+        pass = state.pass,
+        emailError = state.emailError,
+        passError = state.passError,
+        canSubmit = state.canSubmit,
+        isSubmitting = state.isSubmitting,
+        errorMsg = state.errorMsg,
+        onEmailChange = vm::onEmailChange,
+        onPassChange = vm::onPassChange,
+        onSubmit = vm::loginUser,
+        onGoRegister = onGoRegister
+    )
+}
 
 
 
-        LoginScreen(                                             // Delegamos a UI presentacional
-            email = state.email,                                 // Valor de email
-            pass = state.pass,                                   // Valor de password
-            emailError = state.emailError,                       // Error de email
-            passError = state.passError,                         // (Opcional) error de pass en login
-            canSubmit = state.canSubmit,                         // Habilitar botón
-            isSubmitting = state.isSubmitting,                   // Loading
-            errorMsg = state.errorMsg,                           // Error global
-            onEmailChange = vm::onLoginEmailChange,              // Handler email
-            onPassChange = vm::onLoginPassChange,                // Handler pass
-            onSubmit = vm::submitLogin,                          // Acción enviar
-            onGoRegister = onGoRegister                          // Ir a Registro
-        )
-    }
 
 
     //2 modificamos la funcion principal haciendo private y agregando variable y elementos dle fiormulario

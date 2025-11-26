@@ -2,9 +2,10 @@ package com.example.uinavegacion.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.uinavegacion.data.local.booking.BookingEntity
-import com.example.uinavegacion.data.local.field.FieldEntity
-import com.example.uinavegacion.data.repository.UserRepository
+import com.example.uinavegacion.data.remote.dto.BookingDto
+import com.example.uinavegacion.data.remote.dto.CanchasDto
+import com.example.uinavegacion.data.repository.BookingApiRepository
+import com.example.uinavegacion.data.repository.CanchasApiRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,35 +15,34 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class AdminViewModel(
-    private val userRepository: UserRepository
+    private val bookingRepository: BookingApiRepository,
+    private val fieldRepository: CanchasApiRepository
 ) : ViewModel() {
 
-    private val _allBookings = MutableStateFlow<List<BookingEntity>>(emptyList())
-    val allBookings: StateFlow<List<BookingEntity>> = _allBookings.asStateFlow()
+    private val _allBookings = MutableStateFlow<List<BookingDto>>(emptyList())
+    val allBookings: StateFlow<List<BookingDto>> = _allBookings.asStateFlow()
 
-    private val _allFields = MutableStateFlow<List<FieldEntity>>(emptyList())
-    val allFields: StateFlow<List<FieldEntity>> = _allFields.asStateFlow()
+    private val _allFields = MutableStateFlow<List<CanchasDto>>(emptyList())
+    val allFields: StateFlow<List<CanchasDto>> = _allFields.asStateFlow()
 
     private val _status = MutableStateFlow<String?>(null)
     val status: StateFlow<String?> = _status.asStateFlow()
 
-    // Cargar todas las reservas
     fun loadAllBookings() {
         viewModelScope.launch {
-            _allBookings.value = withContext(Dispatchers.IO) {
-                userRepository.getAllBookings()
+            try {
+                val result = bookingRepository.fetchBookings()
+                _allBookings.value = result.getOrThrow()
+            } catch (e: Exception) {
+                _status.value = e.message
             }
         }
     }
 
-    // Eliminar reserva
     fun deleteBooking(bookingId: Long) {
         viewModelScope.launch {
             try {
-                withContext(Dispatchers.IO) {
-                    userRepository.deleteBooking(bookingId)
-                }
-                // Actualiza la lista localmente para que desaparezca inmediatamente
+                bookingRepository.delete(bookingId.toInt())
                 _allBookings.update { it.filter { b -> b.id != bookingId } }
             } catch (e: Exception) {
                 _status.value = e.message
@@ -50,33 +50,45 @@ class AdminViewModel(
         }
     }
 
-    // Cargar canchas existentes
+
     fun loadFields() {
         viewModelScope.launch {
-            _allFields.value = withContext(Dispatchers.IO) {
-                userRepository.getAllFields()
+            try {
+                val result = fieldRepository.fetchCanchas()
+                _allFields.value = result.getOrThrow()
+            } catch (e: Exception) {
+                _status.value = e.message
             }
         }
     }
 
-    // Agregar nueva cancha
-    fun addField(name: String, type: String,
-                 location: String,
-                 pricePerHour: Double,
-                 imageUrl: String = "") {
+    fun addField(
+        name: String,
+        type: String,
+        location: String,
+        pricePerHour: Double,
+        imageUrl: String = ""
+    ) {
         viewModelScope.launch {
             try {
-                val newField = FieldEntity(name = name,type = type,
+                val newField = CanchasDto(
+                    id = 0L,
+                    name = name,
+                    type = type,
                     location = location,
                     pricePerHour = pricePerHour,
-                    imageUrl = imageUrl)
-                withContext(Dispatchers.IO) {
-                    userRepository.addField(newField)
-                }
+                    imageUrl = imageUrl
+                )
+                fieldRepository.create(newField)
                 loadFields()
             } catch (e: Exception) {
                 _status.value = e.message
             }
         }
     }
+
+    fun clearStatus() {
+        _status.value = null
+    }
 }
+

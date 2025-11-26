@@ -1,13 +1,8 @@
 package com.example.uinavegacion.ui.screen
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -16,57 +11,43 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
-import com.example.uinavegacion.data.local.Storage.UserPreferences
+
 import com.example.uinavegacion.ui.components.ReservaItem
-import com.example.uinavegacion.ui.viewmodel.AuthViewModel
-import com.example.uinavegacion.ui.viewmodel.BookingViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+
+import com.example.uinavegacion.ui.viewmodel.LoginViewModel
+import com.example.uinavegacion.ui.viewmodel.UserBookingsViewModel
 
 @Composable
 fun PerfilScreen(
     userId: Long?,
-    authViewModel: AuthViewModel,
-    bookingViewModel: BookingViewModel
+    loginViewModel: LoginViewModel,
+    userBookingsViewModel: UserBookingsViewModel
 ) {
-    val profileState by authViewModel.profile.collectAsStateWithLifecycle()
-    val bookings by bookingViewModel.userBookings.collectAsStateWithLifecycle()
-
+    val loginState by loginViewModel.loginState.collectAsStateWithLifecycle()
+    val bookingState by userBookingsViewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(userId) {
         if (userId != null) {
-            authViewModel.loadUserById(userId)
-            bookingViewModel.loadBookingsByUser(userId)
+            loginViewModel.loadUserById(userId)          // debes implementar esto en LoginViewModel
+            userBookingsViewModel.loadBookingsByUser(userId)
         }
-
     }
+
+    val user = loginState.user
 
     Column(
         modifier = Modifier
@@ -75,23 +56,18 @@ fun PerfilScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-
-        if (profileState.isLoading) {
+        if (loginState.isLoading) {
             CircularProgressIndicator()
             Text("Cargando perfil...")
-            return
+            return@Column
         }
 
-
-        profileState.errorMsg?.let {
+        loginState.errorMsg?.let {
             Text(text = it, color = Color.Red, fontSize = 18.sp)
-            return
+            return@Column
         }
 
-        // --- PERFIL ---
-        profileState.user?.let { user ->
-
+        user?.let {
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -100,7 +76,7 @@ fun PerfilScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = user.name.take(1).uppercase(),
+                    text = it.name?.take(1)?.uppercase() ?:"?",
                     fontSize = 48.sp,
                     color = Color.White
                 )
@@ -108,16 +84,13 @@ fun PerfilScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text("Nombre: ${user.name}", fontSize = 20.sp)
-            Text("Email: ${user.email}", fontSize = 18.sp)
-            Text("Teléfono: ${user.phone}", fontSize = 18.sp)
-
+            Text("Nombre: ${it.name ?: "No registrado"}", fontSize = 20.sp)
+            Text("Email: ${it.email ?:"No registrado"}", fontSize = 18.sp)
+            Text("Teléfono: ${it.phone ?:"No registrado"}", fontSize = 18.sp)
 
             Spacer(modifier = Modifier.height(30.dp))
-
             HorizontalDivider()
 
-            // --- RESERVAS DEL USUARIO ---
             Text(
                 "Mis reservas",
                 fontSize = 22.sp,
@@ -125,18 +98,20 @@ fun PerfilScreen(
                 modifier = Modifier.padding(vertical = 16.dp)
             )
 
-            if (bookings.isEmpty()) {
-                Text(
-                    "No tienes reservas registradas.",
-                    fontSize = 16.sp,
-                    color = Color.Gray
-                )
-            } else {
-                bookings.forEach { reserva ->
-                    ReservaItem(reserva = reserva, onDelete = { bookingId ->
-                        bookingViewModel.deleteBooking(bookingId = reserva.id )
-                        userId?.let { bookingViewModel.loadBookingsByUser(it) }
-                    })
+            when {
+                bookingState.isLoading -> CircularProgressIndicator()
+                bookingState.error != null -> Text(text = bookingState.error!!, color = Color.Red)
+                bookingState.bookings.isEmpty() -> Text("No tienes reservas registradas.", color = Color.Gray)
+                else -> bookingState.bookings.forEach { reserva ->
+                    ReservaItem(
+                        reserva = reserva,
+                        onDelete = {
+                            reserva.id?.let { id ->
+                                userBookingsViewModel.deleteBooking(id)
+                                userId?.let { userBookingsViewModel.loadBookingsByUser(it) }
+                            }
+                        }
+                    )
                 }
             }
         }

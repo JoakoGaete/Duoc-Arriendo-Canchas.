@@ -21,10 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.uinavegacion.data.local.booking.BookingEntity
+import com.example.uinavegacion.data.remote.dto.BookingDto
 
 @Composable
-fun BookingItemAdmin(reserva: BookingEntity, onDelete: () -> Unit) {
+fun BookingItemAdmin(reserva: BookingDto, onDelete: () -> Unit) {
     var showDialog by remember { mutableStateOf(false) }
 
     Column (
@@ -33,11 +33,11 @@ fun BookingItemAdmin(reserva: BookingEntity, onDelete: () -> Unit) {
             .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
             .padding(16.dp)
     ) {
-        Text("Usuario ID: ${reserva.userId}")
-        Text("Cancha: ${reserva.fieldId}")
-        Text("Fecha: ${reserva.bookingDate}")
-        Text("Hora: ${reserva.startTime}")
-        Text("Estado: ${reserva.status}")
+        Text("Usuario ID: ${reserva.userId ?: "N/A"}")
+        Text("Cancha: ${reserva.fieldId} ?: 'N/A'")
+        Text("Fecha: ${reserva.bookingDate} ?: 'N/A'")
+        Text("Hora: ${reserva.startTime} ?: 'N/A'")
+        Text("Estado: ${reserva.status} ?: 'N/A'")
 
         Spacer(modifier = Modifier.height(8.dp))
         Button (

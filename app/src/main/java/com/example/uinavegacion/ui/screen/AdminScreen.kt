@@ -1,6 +1,7 @@
 package com.example.uinavegacion.ui.screen
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -58,15 +59,24 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
     // Launcher para seleccionar imagen desde galería
-    val pickImageLauncher = rememberLauncherForActivityResult (
+    val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imageUri = uri
     }
 
+    // Carga inicial de datos
     LaunchedEffect(Unit) {
         adminViewModel.loadAllBookings()
         adminViewModel.loadFields()
+    }
+
+    // Mostrar errores como Toast
+    LaunchedEffect(status) {
+        status?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            adminViewModel.clearStatus()
+        }
     }
 
     Column(
@@ -82,9 +92,24 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
         Text("Agregar nueva cancha", fontSize = 18.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(8.dp))
 
-        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = type, onValueChange = { type = it }, label = { Text("Tipo") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = location, onValueChange = { location = it }, label = { Text("Ubicación") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Nombre") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = type,
+            onValueChange = { type = it },
+            label = { Text("Tipo") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = location,
+            onValueChange = { location = it },
+            label = { Text("Ubicación") },
+            modifier = Modifier.fillMaxWidth()
+        )
         OutlinedTextField(
             value = price,
             onValueChange = { price = it },
@@ -93,7 +118,6 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        // --- Botón para seleccionar imagen ---
         Row(verticalAlignment = Alignment.CenterVertically) {
             Button(onClick = { pickImageLauncher.launch("image/*") }) {
                 Text(if (imageUri == null) "Seleccionar imagen" else "Cambiar imagen")
@@ -112,16 +136,19 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
         Spacer(Modifier.height(8.dp))
         Button(
             onClick = {
-                if(name.isNotBlank() && type.isNotBlank() && location.isNotBlank() && price.isNotBlank()) {
+                val priceDouble = price.toDoubleOrNull()
+                if (name.isNotBlank() && type.isNotBlank() && location.isNotBlank() && priceDouble != null) {
                     adminViewModel.addField(
                         name = name,
                         type = type,
                         location = location,
-                        pricePerHour = price.toDouble(),
+                        pricePerHour = priceDouble,
                         imageUrl = imageUri?.toString() ?: ""
                     )
                     // Limpiar campos
                     name = ""; type = ""; location = ""; price = ""; imageUri = null
+                } else {
+                    Toast.makeText(context, "Por favor, completa todos los campos correctamente", Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier.align(Alignment.End)
@@ -133,36 +160,37 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
         Text("Canchas existentes:", fontWeight = FontWeight.Medium)
         fields.forEach { field ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if(field.imageUrl.isNotEmpty()) {
+                field.imageUrl?.takeIf { it.isNotEmpty() }?.let { url ->
                     Image(
-                        painter = rememberAsyncImagePainter(Uri.parse(field.imageUrl)),
+                        painter = rememberAsyncImagePainter(Uri.parse(url)),
                         contentDescription = "Imagen cancha",
                         modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop
                     )
                     Spacer(Modifier.width(8.dp))
                 }
-                Text("- ${field.name} | ${field.type} | ${field.location} | $${field.pricePerHour}")
+                Text("- ${field.name ?: ""} | ${field.type ?: ""} | ${field.location ?: ""} | $${field.pricePerHour ?: 0}")
             }
         }
+
 
         Spacer(Modifier.height(30.dp))
         Text("Todas las reservas", fontSize = 18.sp, fontWeight = FontWeight.Medium)
 
-        if(bookings.isEmpty()) {
+        if (bookings.isEmpty()) {
             Text("No hay reservas registradas.", color = Color.Gray)
         } else {
             bookings.forEach { reserva ->
-                BookingItemAdmin(reserva = reserva, onDelete = {
-                    adminViewModel.deleteBooking(reserva.id)
-                })
+                BookingItemAdmin(
+                    reserva = reserva,
+                    onDelete = { adminViewModel.deleteBooking(reserva.id ?: 0L) }
+                )
+            }
+            }
+
                 Spacer(Modifier.height(12.dp))
             }
         }
 
-        status?.let {
-            Text("Error: $it", color = Color.Red)
-        }
-    }
-}
+
 

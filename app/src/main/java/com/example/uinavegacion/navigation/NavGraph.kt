@@ -1,6 +1,4 @@
 package com.example.uinavegacion.navigation
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding // Para aplicar innerPadding
 import androidx.compose.material3.Scaffold // Estructura base con slots
 import androidx.compose.runtime.Composable // Marcador composable
@@ -13,26 +11,25 @@ import kotlinx.coroutines.launch // Para abrir/cerrar drawer con corrutinas
 import androidx.compose.material3.ModalNavigationDrawer // Drawer lateral modal
 import androidx.compose.material3.rememberDrawerState // Estado del drawer
 import androidx.compose.material3.DrawerValue // Valores (Opened/Closed)
-import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope // Alcance de corrutina
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.uinavegacion.data.local.Storage.UserPreferences
-import com.example.uinavegacion.data.local.database.AppDatabase
-import com.example.uinavegacion.data.repository.UserRepository
+
+import com.example.uinavegacion.data.repository.BookingApiRepository
+import com.example.uinavegacion.data.repository.CanchasApiRepository
 
 
 import com.example.uinavegacion.ui.components.AppTopBar // Barra superior
-import com.example.uinavegacion.ui.components.AppDrawer // Drawer composable
 import com.example.uinavegacion.ui.components.DrawerContent
 import com.example.uinavegacion.ui.screen.AdminScreen
 
-import com.example.uinavegacion.ui.viewmodel.BookingScreenVm
+
 import com.example.uinavegacion.ui.screen.HomeScreen // Pantalla Home
 import com.example.uinavegacion.ui.screen.LoginScreenVm // Pantalla Login
 import com.example.uinavegacion.ui.screen.RegisterScreenVm // Pantalla Registro
@@ -40,24 +37,33 @@ import com.example.uinavegacion.ui.screen.BookingScreen
 import com.example.uinavegacion.ui.screen.MapaScreen
 import com.example.uinavegacion.ui.screen.PerfilScreen
 import com.example.uinavegacion.ui.viewmodel.AdminViewModel
-import com.example.uinavegacion.ui.viewmodel.AuthViewModel
+import com.example.uinavegacion.ui.viewmodel.AdminViewModelFactory
+
 
 import com.example.uinavegacion.ui.viewmodel.BookingViewModel
+import com.example.uinavegacion.ui.viewmodel.CanchasViewModel
+import com.example.uinavegacion.ui.viewmodel.LoginViewModel
+import com.example.uinavegacion.ui.viewmodel.UserBookingsViewModel
 
 
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
-    authViewModel: AuthViewModel,
-    bookingViewModel: BookingViewModel
+    loginViewModel: LoginViewModel,
+    bookingViewModel: BookingViewModel,
+    userBookingsViewModel: UserBookingsViewModel,
+    bookingRepository: BookingApiRepository,
+    fieldRepository: CanchasApiRepository
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val prefs = remember { UserPreferences(context) }
     val isLoggedIn by prefs.isLoggedIn.collectAsStateWithLifecycle(false)
+    val loginState by loginViewModel.loginState.collectAsStateWithLifecycle()
+    val userId = loginState.user?.id
 
-    // Helpers de navegación
+    // Funciones de navegación
     val goHome: () -> Unit = { navController.navigate(Route.Home.path) }
     val goLogin: () -> Unit = { navController.navigate(Route.Login.path) }
     val goRegister: () -> Unit = { navController.navigate(Route.Register.path) }
@@ -65,15 +71,6 @@ fun AppNavGraph(
     val goMapa: () -> Unit = { navController.navigate(Route.Mapa.path) }
     val goProfile: () -> Unit = { navController.navigate(Route.Perfil.path) }
     val goAdmin: () -> Unit = { navController.navigate(Route.Admin.path) }
-
-    // Repositorio para AdminViewModel
-    val userRepository = remember {
-        UserRepository(
-            userDao = AppDatabase.getInstance(context).userDao(),
-            bookingDao = AppDatabase.getInstance(context).bookingDao(),
-            fieldDao = AppDatabase.getInstance(context).fieldDao()
-        )
-    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -84,10 +81,12 @@ fun AppNavGraph(
                 onLogin = { scope.launch { drawerState.close() }; goLogin() },
                 onRegister = { scope.launch { drawerState.close() }; goRegister() },
                 onLogout = {
-                    scope.launch { drawerState.close()
-                    prefs.setLoggedIn(false)
-                        authViewModel.clearLoginState()
-                    goHome()}
+                    scope.launch {
+                        drawerState.close()
+                        prefs.setLoggedIn(false)
+                        loginViewModel.resetLogin()
+                        goHome()
+                    }
                 },
                 onBooking = { scope.launch { drawerState.close() }; goBooking() },
                 onMapa = { scope.launch { drawerState.close() }; goMapa() },
@@ -113,74 +112,98 @@ fun AppNavGraph(
                 startDestination = Route.Home.path,
                 modifier = Modifier.padding(innerPadding)
             ) {
+
+                // --- Home Screen ---
                 composable(Route.Home.path) {
                     HomeScreen(
-                        onGoLogin = goLogin,
-                        onGoRegister = goRegister,
                         onGoBooking = goBooking,
-                        viewModel = authViewModel,
+                        canchasviewModel = remember { CanchasViewModel() },
                         onGoMapa = goMapa
                     )
                 }
 
+                // --- Login Screen ---
                 composable(Route.Login.path) {
                     LoginScreenVm(
-                        vm = authViewModel,
-                        onLoginOkNavigateHome = {
-                            // Revisar si es admin
-                            val user = authViewModel.login.value.user
-                            if (user?.isAdmin == true) goAdmin() else goHome()
-                        },
-                        onGoRegister = goRegister,
+                        vm = loginViewModel,
+                        onLoginOkNavigateHome = goHome,
+                        onGoRegister = { navController.navigate(Route.Register.path) },
                         navController = navController
                     )
                 }
 
+                // --- Register Screen ---
                 composable(Route.Register.path) {
                     RegisterScreenVm(
-                        vm = authViewModel,
-                        onRegisteredNavigateLogin = goLogin,
-                        onGoLogin = goLogin
+                        vm = loginViewModel,
+                        onRegisteredNavigateLogin = { navController.navigate(Route.Login.path) },
+                        onGoLogin = { navController.navigate(Route.Login.path) }
                     )
                 }
 
+                // --- Booking Screen ---
                 composable(Route.Booking.path) {
-                    val loginState by authViewModel.login.collectAsStateWithLifecycle()
-                    val userId = loginState.user?.id ?: 0L
-                    BookingScreenVm(
-                        vm = bookingViewModel,
-                        userId = userId,
-                        onBookingSuccess = goHome
-                    )
-                }
-
-                composable(Route.Mapa.path) { MapaScreen() }
-
-                composable(Route.Perfil.path) {
-                    val userId by prefs.userId.collectAsStateWithLifecycle(null)
-                    val adminFlag by prefs.isAdmin.collectAsStateWithLifecycle(false)
-
-                    if (adminFlag) {
-                        val adminViewModel = remember { AdminViewModel(userRepository) }
-                        AdminScreen(adminViewModel = adminViewModel)
+                    if (userId != null) {
+                        BookingScreen(
+                            vm = bookingViewModel,
+                            canchasVM = remember { CanchasViewModel() },
+                            onSubmitSuccess = { navController.navigate(Route.Home.path) }
+                        )
                     } else {
-                        PerfilScreen(
-                            userId = userId,
-                            authViewModel = authViewModel,
-                            bookingViewModel = bookingViewModel
+                        // Usuario encontrado, ir a BookingScreen
+                        BookingScreen(
+                            vm = bookingViewModel,
+                            canchasVM = remember { CanchasViewModel() },
+                            onSubmitSuccess = {
+                                navController.navigate(Route.Home.path) {
+                                    popUpTo(Route.Home.path) { inclusive = true }
+                                }
+                            }
                         )
                     }
                 }
 
-                // Nueva ruta Admin
-                composable(Route.Admin.path) {
-                    val adminViewModel = remember { AdminViewModel(userRepository) }
-                    AdminScreen(adminViewModel = adminViewModel)
+
+                // --- Mapa Screen ---
+                    composable(Route.Mapa.path) { MapaScreen() }
+
+                    // --- Perfil Screen ---
+                    composable(Route.Perfil.path) {
+                        val userId by prefs.userId.collectAsStateWithLifecycle(null)
+                        val adminFlag by prefs.isAdmin.collectAsStateWithLifecycle(false)
+
+                        if (adminFlag) {
+                            // Usando ViewModel con factory para AdminScreen
+                            val adminViewModel: AdminViewModel = viewModel(
+                                factory = AdminViewModelFactory(
+                                    bookingRepository = bookingRepository,
+                                    fieldRepository = fieldRepository
+                                )
+                            )
+                            AdminScreen(adminViewModel = adminViewModel)
+                        } else {
+                            PerfilScreen(
+                                userId = userId,
+                                loginViewModel = loginViewModel,
+                                userBookingsViewModel = userBookingsViewModel
+                            )
+                        }
+                    }
+
+                    // --- Admin Screen ---
+                    composable(Route.Admin.path) {
+                        val adminViewModel: AdminViewModel = viewModel(
+                            factory = AdminViewModelFactory(
+                                bookingRepository = bookingRepository,
+                                fieldRepository = fieldRepository
+                            )
+                        )
+                        AdminScreen(adminViewModel = adminViewModel)
+                    }
                 }
             }
         }
     }
-}
 
 
 

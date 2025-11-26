@@ -2,16 +2,19 @@ package com.example.uinavegacion.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.uinavegacion.data.repository.UserRepository
+import com.example.uinavegacion.data.repository.BookingApiRepository
+import com.example.uinavegacion.data.repository.CanchasApiRepository
 
-class AdminViewModelFactory (
-    private val userRepository: UserRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(AdminViewModel::class.java)) {
-                return AdminViewModel(userRepository) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
+class AdminViewModelFactory(
+    private val bookingRepository: BookingApiRepository,
+    private val fieldRepository: CanchasApiRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(AdminViewModel::class.java)) {
+            return AdminViewModel(bookingRepository, fieldRepository) as T
         }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
+}
+

@@ -7,16 +7,25 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
-import com.example.uinavegacion.data.local.database.AppDatabase
-import com.example.uinavegacion.data.repository.UserRepository
+import com.example.uinavegacion.data.local.Storage.UserPreferences
+import com.example.uinavegacion.data.repository.BookingApiRepository
+import com.example.uinavegacion.data.repository.CanchasApiRepository
+import com.example.uinavegacion.data.repository.UserApiRepository
+
 import com.example.uinavegacion.navigation.AppNavGraph
-import com.example.uinavegacion.ui.viewmodel.AuthViewModel
-import com.example.uinavegacion.ui.viewmodel.AuthViewModelFactory
+
 import com.example.uinavegacion.ui.viewmodel.BookingViewModel
 import com.example.uinavegacion.ui.viewmodel.BookingViewModelFactory
+import com.example.uinavegacion.ui.viewmodel.LoginVIewModelFactory
+import com.example.uinavegacion.ui.viewmodel.LoginViewModel
+import com.example.uinavegacion.ui.viewmodel.UserBookingViewModelFactory
+import com.example.uinavegacion.ui.viewmodel.UserBookingsViewModel
+import kotlinx.coroutines.flow.firstOrNull
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,51 +52,50 @@ Piensa en él como una “lona base” sobre la cual vas a pintar tu UI.
 * Si cambias el tema a dark mode, colorScheme.background
 * cambia automáticamente y el Surface pinta la pantalla con el nuevo color.
 * */
-@Composable // Indica que esta función dibuja UI
-fun AppRoot() { // Raíz de la app para separar responsabilidades (se conserva)
-    // ====== NUEVO: construcción de dependencias (Composition Root) ======
+@Composable
+fun AppRoot() {
     val context = LocalContext.current.applicationContext
-    // ^ Obtenemos el applicationContext para construir la base de datos de Room.
 
-    val db = AppDatabase.getInstance(context)
-    // ^ Singleton de Room. No crea múltiples instancias.
-
-    val userDao = db.userDao()
-    val fieldDao= db.fieldDao()
-    val bookingDao= db.bookingDao()
-    // ^ Obtenemos el DAO de usuarios desde la DB.
-
-    val userRepository = UserRepository(userDao,bookingDao,fieldDao)
+    // Repositorios de microservicio
+    val bookingRepository = remember { BookingApiRepository() }
+    val fieldRepository = remember { CanchasApiRepository() }
+    val prefs = remember { UserPreferences(context) }
 
 
-    // ^ Repositorio que encapsula la lógica de login/registro contra Room.
-
-    val authViewModel: AuthViewModel = viewModel(
-        factory = AuthViewModelFactory(userRepository)
+    // ViewModels con factories
+    val loginViewModel: LoginViewModel = viewModel(
+        factory = LoginVIewModelFactory(UserApiRepository(),prefs )
     )
+
+    LaunchedEffect (Unit) {
+        val id = prefs.userId.firstOrNull() ?: 0L
+        if (prefs.isLoggedIn.firstOrNull() == true && id != 0L) {
+            loginViewModel.loadUserById(id)
+        }
+    }
+
     val bookingViewModel: BookingViewModel = viewModel(
-        factory = BookingViewModelFactory(userRepository)
+        factory = BookingViewModelFactory(bookingRepository)
     )
 
-    // ^ Creamos el ViewModel con factory para inyectar el repositorio.
-    //   Esto reemplaza cualquier uso anterior de listas en memoria (USERS).
+    val userBookingsViewModel: UserBookingsViewModel = viewModel(
+        factory = UserBookingViewModelFactory(bookingRepository)
+    )
 
-    // ====== TU NAVEGACIÓN ORIGINAL ======
-    val navController = rememberNavController() // Controlador de navegación (igual que antes)
-    MaterialTheme { // Provee colores/tipografías Material 3 (igual que antes)
-        Surface(color = MaterialTheme.colorScheme.background) { // Fondo general (igual que antes)
+    val navController = rememberNavController()
 
-            // ====== MOD: pasamos el AuthViewModel a tu NavGraph ======
-            // Si tu AppNavGraph ya recibía el VM o lo creaba adentro, lo mejor ahora es PASARLO
-            // para que toda la app use la MISMA instancia que acabamos de inyectar.
+    MaterialTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
             AppNavGraph(
                 navController = navController,
-                authViewModel = authViewModel ,
-                bookingViewModel =  bookingViewModel
+                loginViewModel = loginViewModel,
+                bookingViewModel = bookingViewModel,
+                userBookingsViewModel = userBookingsViewModel,
+                bookingRepository = bookingRepository,
+                fieldRepository = fieldRepository
             )
-            // NOTA: Si tu AppNavGraph no tiene este parámetro aún, basta con agregarlo:
-            // fun AppNavGraph(navController: NavHostController, authViewModel: AuthViewModel) { ... }
-            // y luego pasar ese authViewModel a las pantallas Login/Register donde se use.
         }
     }
 }
+
+

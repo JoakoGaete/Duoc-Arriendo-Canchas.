@@ -23,10 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.uinavegacion.data.local.booking.BookingEntity
+
+import com.example.uinavegacion.data.remote.dto.BookingDto
 
 @Composable
-fun ReservaItem(reserva: BookingEntity, onDelete: (Long) -> Unit) {var showDialog by remember { mutableStateOf(false) }
+fun ReservaItem(reserva: BookingDto, onDelete: (Long) -> Unit) {var showDialog by remember { mutableStateOf(false) }
 
     Card (
         modifier = Modifier
@@ -63,8 +64,10 @@ fun ReservaItem(reserva: BookingEntity, onDelete: (Long) -> Unit) {var showDialo
                 text = { Text("¿Deseas eliminar esta reserva?") },
                 confirmButton = {
                     TextButton (onClick = {
-                        onDelete(reserva.id)
-                        showDialog = false
+                        reserva.id?.let { id ->
+                            onDelete(id)
+                            showDialog = false
+                        }
                     }) {
                         Text("Sí")
                     }

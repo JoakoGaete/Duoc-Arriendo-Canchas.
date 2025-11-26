@@ -5,6 +5,7 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.isDebugInspectorInfoEnabled
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,8 +68,11 @@ import com.example.uinavegacion.data.local.Storage.UserPreferences
 
 import com.example.uinavegacion.ui.viewmodel.BookingUiState
 import com.example.uinavegacion.ui.viewmodel.BookingViewModel
+import com.example.uinavegacion.ui.viewmodel.CanchasViewModel
+
 import java.io.File
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -89,281 +94,204 @@ private fun getImageUriForFile(context: Context, file: File): Uri {
 @Composable
 fun BookingScreen(
     vm: BookingViewModel,
-    state: BookingUiState,
-    onSubmit: () -> Unit
+    canchasVM: CanchasViewModel,
+    onSubmitSuccess: () -> Unit
 ) {
-    val state by vm.booking.collectAsStateWithLifecycle()
+    val state = vm.uiState
+    val fields = canchasVM.uiState.fields
+
     val context = LocalContext.current
+    val userPrefs = remember { UserPreferences(context) }
+    val isLoggedIn by userPrefs.isLoggedIn.collectAsStateWithLifecycle(false)
+    val userId by userPrefs.userId.collectAsState(initial = null)
+
     var photoUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCaptureUri by remember { mutableStateOf<Uri?>(null) }
-    val userPrefrs = remember { UserPreferences(context) }
-    val isLoggedIn by  userPrefrs.isLoggedIn.collectAsStateWithLifecycle(false)
-    val userId by userPrefrs.userId.collectAsState(initial = null)
+    var expanded by remember { mutableStateOf(false) }
 
+    val scrollState = rememberScrollState()
 
+    // Cargar canchas
+    LaunchedEffect(Unit) {
+        canchasVM.loadFields()
+    }
+
+    // Cámara
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) {
             photoUriString = pendingCaptureUri?.toString()
-            Toast.makeText(context, "Foto tomada correctamente", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Foto tomada", Toast.LENGTH_SHORT).show()
         } else {
             pendingCaptureUri = null
-            Toast.makeText(context, "No se tomó ninguna foto", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    LaunchedEffect(state.success) {
-        if (state.success) {
-            Toast.makeText(context, "¡Reservado con éxito!", Toast.LENGTH_SHORT).show()
-            vm.clearBookingResult()
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .background(Color.White)
+            .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
 
-        Text(
-            text = "Reserva Cancha",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
+        Text("Reserva Cancha", style = MaterialTheme.typography.headlineMedium)
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
-        if (!isLoggedIn){Text(text = "Recuerda iniciar sesion para poder reservar ",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold)}
+        if (!isLoggedIn) {
+            Text(
+                "Inicia sesión para reservar",
+                fontWeight = FontWeight.Bold,
+                color = Color.Red
+            )
+            return@Column
+        }
 
-
-        // ---------- Selector de Cancha ----------
-        var expanded by remember { mutableStateOf(false) }
+        // --- Selección cancha ---
         Box {
             OutlinedTextField(
-                value = state.fieldId?.toString() ?: "",
-                onValueChange = {},
+                value = state.fieldId?.let { id -> fields.find { it.id == id }?.name } ?: "",
                 readOnly = true,
+                onValueChange = {},
                 label = { Text("Cancha") },
-                placeholder = { Text("Selecciona cancha") },
-                leadingIcon = { Icon(Icons.Default.SportsSoccer, contentDescription = null, tint =Color(0xFF2E811F))},
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = true }
             )
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                vm.fields.collectAsState().value.forEach { field ->
-                    DropdownMenuItem(
-                        text = { Text(field.name) },
-                        onClick = {
-                            vm.onFieldSelected(field.id)
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
 
-        Spacer(Modifier.height(16.dp))
-
-        // ---------- Selector de Fecha ----------
-        OutlinedTextField(
-            value = state.bookingDate,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Fecha") },
-            leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null, tint = Color(0xFF2E811F)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    val calendar = Calendar.getInstance()
-                    DatePickerDialog(
-                        context,
-                        { _, year, month, dayOfMonth ->
-                            val selectedCalendar = Calendar.getInstance()
-                            selectedCalendar.set(year, month, dayOfMonth)
-                            if (selectedCalendar.before(Calendar.getInstance())) {
-                                Toast.makeText(
-                                    context,
-                                    "No puedes seleccionar una fecha pasada",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else {
-                                vm.onDateSelected("$dayOfMonth/${month + 1}/$year")
-                            }
-                        },
-                        calendar.get(Calendar.YEAR),
-                        calendar.get(Calendar.MONTH),
-                        calendar.get(Calendar.DAY_OF_MONTH)
-                    ).apply {
-                        datePicker.minDate = calendar.timeInMillis
-                    }.show()
-                }
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // ---------- Selector de Hora ----------
-        OutlinedTextField(
-            value = state.startTime,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Hora") },
-            leadingIcon = { Icon(Icons.Default.AccessTimeFilled, contentDescription = null, tint = Color(
-                0xFF2E811F
-            )
-            ) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    val calendar = Calendar.getInstance()
-                    TimePickerDialog(
-                        context,
-                        { _, hourOfDay, minute ->
-                            if (hourOfDay in 10..22) {
-                                vm.onTimeSelected(String.format("%02d:%02d", hourOfDay, minute))
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    "Horario permitido: 10:00 a 22:00",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        },
-                        calendar.get(Calendar.HOUR_OF_DAY),
-                        calendar.get(Calendar.MINUTE),
-                        true
-                    ).show()
-                }
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        // ---------- Botón Reservar ----------
-        Button(
-            onClick = {userId?.let { vm.submitBooking(it) } },
-            enabled = state.canSubmit && !state.isSubmitting && photoUriString != null && isLoggedIn,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF1CB04C),
-                contentColor = Color.White
-            )
-
-        ) {
-            if (state.isSubmitting) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = Color.White
-                )
-                Spacer(Modifier.width(8.dp))
-                Text("Reservando...")
-            } else {
-                Text("Reservar",color = Color.White)
-            }
-        }
-
-        state.errorMsg?.let {
-            Spacer(Modifier.height(12.dp))
-            Text(it, color = MaterialTheme.colorScheme.error)
-        }
-
-        Spacer(Modifier.height(32.dp))
-        var showDialog by remember { mutableStateOf(false) }
-
-        // ---------- CARD de la cámara ----------
-        ElevatedCard(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
             ) {
-
-                Text(
-                    text = "Por favor agrega una foto de tu cédula de identidad",
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                // ---- FOTO ----
-                if (photoUriString.isNullOrEmpty()) {
-
-                    Text(
-                        text = "No hay foto",
-                        style = MaterialTheme.typography.bodyMedium
+                if (fields.isEmpty()) {
+                    DropdownMenuItem(
+                        text = { Text("Cargando canchas...") },
+                        onClick = {}
                     )
-
                 } else {
-
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(Uri.parse(photoUriString))
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Foto Tomada",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp),     // ← FOTO GRANDE
-                        contentScale = ContentScale.Crop
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                // ---- Botón Cámara ----
-                Button(onClick = {
-                    val file = createTempImageFile(context)
-                    val uri = getImageUriForFile(context, file)
-                    pendingCaptureUri = uri
-                    takePictureLauncher.launch(uri)
-                },colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1CB04C),
-                    contentColor = Color.White)) {
-                    Text(
-                        if (photoUriString.isNullOrEmpty()) "Abrir Cámara"
-                        else "Volver a tomar"
-                    )
-                }
-
-                // ---- Botón de eliminar ----
-                if (!photoUriString.isNullOrEmpty()) {
-
-                    Spacer(Modifier.height(12.dp))
-
-                    OutlinedButton(onClick = { showDialog = true }) {
-                        Text("Eliminar Foto", color = Color(0xFF1CB04C))
-                    }
-
-                    if (showDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showDialog = false },
-                            title = { Text("Confirmación") },
-                            text = { Text("¿Desea eliminar la foto?") },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    photoUriString = null
-                                    showDialog = false
-                                    Toast.makeText(context, "Foto eliminada", Toast.LENGTH_SHORT)
-                                        .show()
-                                }) { Text("Aceptar", color = Color(0xFF1CB04C)) }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showDialog = false }) { Text("Cancelar", color = Color(0xFF1CB04C)) }
+                    fields.forEach { f ->
+                        DropdownMenuItem(
+                            text = { Text(f.name ?: "Sin nombre") },
+                            onClick = {
+                                f.id?.let { id -> vm.onFieldSelected(id) }
+                                expanded = false
                             }
                         )
                     }
                 }
             }
         }
+
+        Spacer(Modifier.height(16.dp))
+
+        // --- Fecha ---
+        val calendar = Calendar.getInstance()
+        OutlinedTextField(
+            value = state.bookingDate?.toString() ?: "",
+            readOnly = true,
+            onValueChange = {},
+            label = { Text("Fecha de reserva") },
+            modifier = Modifier.clickable {
+                DatePickerDialog(
+                    context,
+                    { _, year, month, dayOfMonth ->
+                        val selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+                        vm.onDateSelected(selectedDate)
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+                ).show()
+            }
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // --- Hora ---
+        OutlinedTextField(
+            value = state.startTime,
+            readOnly = true,
+            onValueChange = {},
+            label = { Text("Hora") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    val c = Calendar.getInstance()
+                    TimePickerDialog(
+                        context,
+                        { _, h, m -> vm.onTimeSelected(String.format("%02d:%02d", h, m)) },
+                        c.get(Calendar.HOUR_OF_DAY),
+                        c.get(Calendar.MINUTE),
+                        true
+                    ).show()
+                }
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        // --- Foto ---
+        Button(
+            onClick = {
+                val file = createTempImageFile(context)
+                val uri = getImageUriForFile(context, file)
+                pendingCaptureUri = uri
+                takePictureLauncher.launch(uri)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E811F))
+        ) {
+            Text(if (photoUriString == null) "Tomar Foto de carnet" else "Repetir Foto")
+        }
+
+        photoUriString?.let { uriString ->
+            AsyncImage(
+                model = Uri.parse(uriString),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // --- Botón Reservar ---
+        Button(
+            onClick = {
+                userId?.let { id ->
+                    vm.submitBooking(id) { onSubmitSuccess() }
+                }
+            },
+            enabled = state.canSubmit && photoUriString != null,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E811F))
+        ) {
+            if (state.isSubmitting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.White
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Reservando...")
+            } else {
+                Text("Reservar")
+            }
+        }
+
+        state.errorMsg?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, color = Color.Red)
+        }
     }
 }
+
+
+
+
+
+
 
 
 

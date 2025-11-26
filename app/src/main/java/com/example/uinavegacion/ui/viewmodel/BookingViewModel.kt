@@ -1,137 +1,110 @@
 package com.example.uinavegacion.ui.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.uinavegacion.data.local.booking.BookingEntity
-import com.example.uinavegacion.data.local.field.FieldEntity
-import com.example.uinavegacion.data.repository.UserRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import com.example.uinavegacion.data.remote.dto.BookingDto
+import com.example.uinavegacion.data.repository.BookingApiRepository
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.util.Date
+import kotlin.Long
 
-// booking iu state
 data class BookingUiState(
-    val userId: Long? = null,           // ID del usuario que está reservando
-    val fieldId: Int? = null,           // Cancha seleccionada
-    val bookingDate: String = "",       // Fecha (ej: "2025-11-01")
-    val startTime: String = "",         // Hora (ej: "18:00")
-    val status: String = "pendiente",   // Estado de la reserva
-
-    val fieldError: String? = null,
-    val dateError: String? = null,
-    val timeError: String? = null,
-
-    val isSubmitting: Boolean = false,  // Mientras se guarda la reserva
-    val canSubmit: Boolean = false,     // Si todos los campos están llenos
-    val success: Boolean = false,       // Si la reserva fue creada
-    val errorMsg: String? = null        // Mensaje de error global
+    val fieldId: Long? = null,
+    val bookingDate: String? = null,
+    val startTime: String = "",
+    val endTime: String = "",
+    val isSubmitting: Boolean = false,
+    val success: Boolean = false,
+    val errorMsg: String? = null,
+    val canSubmit: Boolean = false
 )
+
 class BookingViewModel(
-    private val repository: UserRepository
+    private val repository: BookingApiRepository = BookingApiRepository()
 ) : ViewModel() {
 
-    // Estado de la UI de Booking
-    private val _booking = MutableStateFlow(BookingUiState())
-    val booking: StateFlow<BookingUiState> = _booking
+    var uiState by mutableStateOf(BookingUiState())
+        private set
 
-    // Lista de canchas
-    private val _fields = MutableStateFlow<List<FieldEntity>>(emptyList())
-    val fields: StateFlow<List<FieldEntity>> = _fields
-
-    init {
-        loadFields()
+    // --- Seleccionar cancha ---
+    fun onFieldSelected(id: Long) {
+        uiState = uiState.copy(fieldId = id)
+        validate()
     }
 
-    // Carga las canchas desde la DB
-    private fun loadFields() {
-        viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                repository.getAllFields()
-            }
-            _fields.value = result
+    // --- Seleccionar fecha ---
+    fun onDateSelected(date: LocalDate) {
+        uiState = uiState.copy(bookingDate = date.toString())
+        validate()
+    }
+
+    // --- Seleccionar hora ---
+    fun onTimeSelected(start: String) {
+        uiState = uiState.copy(startTime = start)
+        validate()
+    }
+
+    // --- Validar formulario ---
+    private fun validate() {
+        val ok =
+            uiState.fieldId != null &&
+                    uiState.bookingDate != null &&
+                    uiState.startTime.isNotBlank()
+
+        uiState = uiState.copy(canSubmit = ok)
+    }
+
+    // --- Enviar reserva ---
+    fun submitBooking(userId: Long, onSuccess: () -> Unit) {
+        if (!uiState.canSubmit) return
+        if (uiState.bookingDate == null) {
+            uiState = uiState.copy(errorMsg = "Debes seleccionar una fecha")
+            return
         }
-    }
 
-    // Handlers para UI
-    fun onFieldSelected(fieldId: Int) {
-        _booking.update { it.copy(fieldId = fieldId, fieldError = null) }
-        recomputeCanSubmit()
-    }
+        uiState = uiState.copy(isSubmitting = true)
 
-    fun onDateSelected(date: String) {
-        _booking.update { it.copy(bookingDate = date) }
-        recomputeCanSubmit()
-    }
 
-    fun onTimeSelected(time: String) {
-        _booking.update { it.copy(startTime = time) }
-        recomputeCanSubmit()
-    }
-
-    private fun recomputeCanSubmit() {
-        val state = _booking.value
-        val can = state.fieldId != null &&
-                state.bookingDate.isNotBlank() &&
-                state.startTime.isNotBlank()
-        _booking.update { it.copy(canSubmit = can) }
-    }
-
-    // Inserta reserva en DB en background
-    fun submitBooking(userId: Long) {
-        val state = _booking.value
-        if (!state.canSubmit || state.isSubmitting) return
 
         viewModelScope.launch {
-            _booking.update { it.copy(isSubmitting = true, errorMsg = null) }
+            val dto = BookingDto(
+                id = null,
+                userId = userId,
+                fieldId = uiState.fieldId!!.toInt(),
+                bookingDate = java.sql.Date.valueOf(uiState.bookingDate!!),
+                startTime = uiState.startTime,
+                status = "pendiente"
+            )
 
-            try {
-                val booking = BookingEntity(
-                    userId = userId,
-                    fieldId = state.fieldId!!,
-                    bookingDate = state.bookingDate,
-                    startTime = state.startTime,
-                    status = "pendiente"
-                )
+            val result = repository.create(dto)
 
-                withContext(Dispatchers.IO) {
-                    repository.insertBooking(booking)
+            uiState = result.fold(
+                onSuccess = {
+                    uiState.copy(isSubmitting = false, success = true)
+                        .also { onSuccess() }
+                },
+                onFailure = { e ->
+                    uiState.copy(isSubmitting = false, errorMsg = e.message ?: "Error inesperado")
                 }
-
-                _booking.update { it.copy(isSubmitting = false, success = true) }
-            } catch (e: Exception) {
-                _booking.update { it.copy(isSubmitting = false, errorMsg = e.message) }
-            }
+            )
         }
     }
 
-    // Limpia resultado después de reservar
-    fun clearBookingResult() {
-        _booking.update { it.copy(success = false, errorMsg = null) }
-    }
-    private val _userBookings = MutableStateFlow<List<BookingEntity>>(emptyList())
-    val userBookings = _userBookings.asStateFlow()
 
-    fun loadBookingsByUser(userId: Long) {
-        viewModelScope.launch {
-            _userBookings.value = repository.getBookingsByUserId(userId)
-        }
-    }
-    fun deleteBooking(bookingId: Long) {
-        viewModelScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    repository.deleteBooking(bookingId)
-                }
 
-                _booking.update { it.copy(success = true) }
-            } catch (e: Exception) {
-                _booking.update { it.copy(errorMsg = e.message) }
-            }
-        }
+    // --- Limpiar resultado ---
+    fun clearResult() {
+        uiState = uiState.copy(success = false)
     }
 
-}
+    }
+
+
+
+
+
+

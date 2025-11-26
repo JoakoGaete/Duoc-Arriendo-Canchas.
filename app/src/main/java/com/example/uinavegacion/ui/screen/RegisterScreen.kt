@@ -22,12 +22,13 @@ import androidx.compose.ui.unit.dp                            // DPs
 import androidx.lifecycle.compose.collectAsStateWithLifecycle // Observa StateFlow
 import androidx.lifecycle.viewmodel.compose.viewModel         // Obtiene VM
 import com.example.uinavegacion.R
-import com.example.uinavegacion.ui.viewmodel.AuthViewModel         // ViewModel
+import com.example.uinavegacion.ui.viewmodel.LoginViewModel
+
 
 //1 creamos la union con el viewmodel creado
 @Composable                                                  // Pantalla Registro conectada al VM
 fun RegisterScreenVm(
-    vm: AuthViewModel,                            // MOD: recibimos el VM desde NavGraph
+    vm: LoginViewModel,                            // MOD: recibimos el VM desde NavGraph
     onRegisteredNavigateLogin: () -> Unit,                   // Navega a Login si success=true
     onGoLogin: () -> Unit                                    // Botón alternativo para ir a Login
 ) {
