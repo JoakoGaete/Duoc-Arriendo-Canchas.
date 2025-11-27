@@ -75,7 +75,7 @@ class BookingViewModel(
                 id = null,
                 userId = userId,
                 fieldId = uiState.fieldId!!.toInt(),
-                bookingDate = java.sql.Date.valueOf(uiState.bookingDate!!),
+                date = uiState.bookingDate!!.toString(),
                 startTime = uiState.startTime,
                 status = "pendiente"
             )

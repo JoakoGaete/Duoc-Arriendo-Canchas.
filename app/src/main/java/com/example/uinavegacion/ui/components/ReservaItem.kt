@@ -40,7 +40,7 @@ fun ReservaItem(reserva: BookingDto, onDelete: (Long) -> Unit) {var showDialog b
             modifier = Modifier.padding(16.dp)
         ) {
             Text(text = "Cancha: ${reserva.fieldId}", fontSize = 18.sp)
-            Text(text = "Fecha: ${reserva.bookingDate}", fontSize = 16.sp, color = Color.DarkGray)
+            Text(text = "Fecha: ${reserva.date}", fontSize = 16.sp, color = Color.DarkGray)
             Text(text = "Horario: ${reserva.startTime}", fontSize = 16.sp, color = Color.DarkGray)
         }
         Spacer(modifier = Modifier.height(8.dp))

@@ -5,6 +5,8 @@ import com.example.uinavegacion.data.remote.UsuariosApi
 import com.example.uinavegacion.data.remote.RemoteModuleUsuarios
 import com.example.uinavegacion.data.remote.dto.LoginRequest
 import com.example.uinavegacion.data.remote.dto.LoginResponse
+import com.example.uinavegacion.data.remote.dto.UserRequestDto
+import com.example.uinavegacion.data.remote.dto.UserResponseDto
 import com.example.uinavegacion.data.remote.dto.UsuariosDto
 import retrofit2.HttpException
 
@@ -29,11 +31,12 @@ class UserApiRepository(
     }
 
     // Crea un nuevo post.
-    suspend fun create(usuario: UsuariosDto): Result<UsuariosDto> = try {
-        Result.success(api.createUsuario(usuario))
+    suspend fun registerUser(dto: UserRequestDto): Result<UserResponseDto> = try {
+        Result.success(api.createUsuario(dto))
     } catch (e: Exception) {
         Result.failure(e)
     }
+
 
     // Actualiza un post existente.
 

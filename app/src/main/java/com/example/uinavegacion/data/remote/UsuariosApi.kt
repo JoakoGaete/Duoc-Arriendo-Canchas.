@@ -2,6 +2,8 @@ package com.example.uinavegacion.data.remote
 
 import com.example.uinavegacion.data.remote.dto.LoginRequest
 import com.example.uinavegacion.data.remote.dto.LoginResponse
+import com.example.uinavegacion.data.remote.dto.UserRequestDto
+import com.example.uinavegacion.data.remote.dto.UserResponseDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -24,7 +26,7 @@ interface UsuariosApi {
     suspend fun getUsuarioById(@Path("id") id: Int): UsuariosDto
 
     @POST("users")
-    suspend fun createUsuario(@Body usuario: UsuariosDto): UsuariosDto
+    suspend fun createUsuario(@Body usuario: UserRequestDto): UserResponseDto
 
     @PUT("users/{id}")
     suspend fun updateUsuario(

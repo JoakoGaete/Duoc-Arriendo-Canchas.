@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.uinavegacion.data.local.Storage.UserPreferences
 import com.example.uinavegacion.data.remote.dto.LoginResponse
+import com.example.uinavegacion.data.remote.dto.UserRequestDto
+import com.example.uinavegacion.data.remote.dto.UsuariosDto
 import com.example.uinavegacion.data.repository.UserApiRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -152,7 +154,7 @@ class LoginViewModel(
     fun submitRegister() {
         val state = _register.value
 
-        // Validaciones simples
+        // --- VALIDACIONES ---
         if (state.name.isBlank()) {
             _register.update { it.copy(nameError = "Nombre obligatorio") }
             return
@@ -161,17 +163,51 @@ class LoginViewModel(
             _register.update { it.copy(emailError = "Email obligatorio") }
             return
         }
+        if (state.pass.isBlank()) {
+            _register.update { it.copy(passError = "Contraseña obligatoria") }
+            return
+        }
+        if (state.confirm.isBlank()) {
+            _register.update { it.copy(confirmError = "Debes confirmar la contraseña") }
+            return
+        }
         if (state.pass != state.confirm) {
             _register.update { it.copy(confirmError = "Contraseñas no coinciden") }
             return
         }
 
-        // Simula registro exitoso
-        _register.update { it.copy(isSubmitting = true, errorMsg = null) }
-
+        // --- REGISTRO ---
         viewModelScope.launch {
-            delay(1000) // simula llamada a API
-            _register.update { it.copy(isSubmitting = false, success = true) }
+            _register.update { it.copy(isSubmitting = true, errorMsg = null) }
+
+            val userDto = UserRequestDto(
+                name = state.name,
+                email = state.email,
+                phone = state.phone,
+                password = state.pass
+            )
+
+            val result = repository.registerUser(userDto)
+
+            result.fold(
+                onSuccess = {
+                    _register.update {
+                        it.copy(
+                            isSubmitting = false,
+                            success = true
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    _register.update {
+                        it.copy(
+                            isSubmitting = false,
+                            success = false,
+                            errorMsg = e.message ?: "Error al registrar"
+                        )
+                    }
+                }
+            )
         }
     }
 

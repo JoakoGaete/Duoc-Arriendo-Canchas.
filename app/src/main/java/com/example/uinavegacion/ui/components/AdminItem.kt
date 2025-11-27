@@ -34,10 +34,10 @@ fun BookingItemAdmin(reserva: BookingDto, onDelete: () -> Unit) {
             .padding(16.dp)
     ) {
         Text("Usuario ID: ${reserva.userId ?: "N/A"}")
-        Text("Cancha: ${reserva.fieldId} ?: 'N/A'")
-        Text("Fecha: ${reserva.bookingDate} ?: 'N/A'")
-        Text("Hora: ${reserva.startTime} ?: 'N/A'")
-        Text("Estado: ${reserva.status} ?: 'N/A'")
+        Text("Cancha: ${reserva.fieldId ?: "N/A"} ")
+        Text("Fecha: ${reserva.date ?: "N/A"} ")
+        Text("Hora: ${reserva.startTime?: "N/A"} ")
+        Text("Estado: ${reserva.status?: "N/A"} ")
 
         Spacer(modifier = Modifier.height(8.dp))
         Button (
