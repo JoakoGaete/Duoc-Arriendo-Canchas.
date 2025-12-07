@@ -176,6 +176,7 @@ fun AppNavGraph(
                             // Usando ViewModel con factory para AdminScreen
                             val adminViewModel: AdminViewModel = viewModel(
                                 factory = AdminViewModelFactory(
+                                    application = LocalContext.current.applicationContext as android.app.Application,
                                     bookingRepository = bookingRepository,
                                     fieldRepository = fieldRepository
                                 )
@@ -194,6 +195,7 @@ fun AppNavGraph(
                     composable(Route.Admin.path) {
                         val adminViewModel: AdminViewModel = viewModel(
                             factory = AdminViewModelFactory(
+                                application = LocalContext.current.applicationContext as android.app.Application,
                                 bookingRepository = bookingRepository,
                                 fieldRepository = fieldRepository
                             )

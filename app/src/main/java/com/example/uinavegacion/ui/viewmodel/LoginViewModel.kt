@@ -8,6 +8,8 @@ import com.example.uinavegacion.data.remote.dto.UserRequestDto
 import com.example.uinavegacion.data.remote.dto.UsuariosDto
 import com.example.uinavegacion.data.repository.UserApiRepository
 import kotlinx.coroutines.delay
+import retrofit2.HttpException
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,14 +56,29 @@ class LoginViewModel(
     val loginState : StateFlow<LoginState> = _loginState.asStateFlow()
 
     init {
-        // Cargar usuario si ya hay id guardado
         viewModelScope.launch {
             val savedId = prefs.userId.firstOrNull()
-            if (savedId != null) {
-                loadUserById(savedId)
+            if (savedId != null && savedId != 0L) {
+                try {
+                    loadUserById(savedId)
+                } catch (e: HttpException) {
+                    if (e.code() == 404) {
+                        // Usuario no encontrado, limpiar credenciales
+                        prefs.logout()
+                    } else {
+                        _loginState.value = _loginState.value.copy(
+                            errorMsg = "Error: ${e.message}"
+                        )
+                    }
+                }
             }
         }
     }
+
+
+
+
+
 
     fun onEmailChange(value: String) {
         _loginState.update { it.copy(email = value, emailError = null) }
@@ -154,27 +171,31 @@ class LoginViewModel(
     fun submitRegister() {
         val state = _register.value
 
-        // --- VALIDACIONES ---
-        if (state.name.isBlank()) {
-            _register.update { it.copy(nameError = "Nombre obligatorio") }
+        if (state.name.length < 4) {
+            _register.update { it.copy(nameError = "Debe tener mínimo 4 caracteres") }
             return
         }
-        if (state.email.isBlank()) {
-            _register.update { it.copy(emailError = "Email obligatorio") }
+
+        if (!state.email.endsWith("@duocuc.cl")) {
+            _register.update { it.copy(emailError = "El email debe ser @duocuc.cl") }
             return
         }
-        if (state.pass.isBlank()) {
-            _register.update { it.copy(passError = "Contraseña obligatoria") }
+
+        if (state.phone.isBlank() || !state.phone.matches(Regex("\\+569\\d{8}"))) {
+            _register.update { it.copy(phoneError = "Teléfono debe ser +569 seguido de 8 dígitos") }
             return
         }
-        if (state.confirm.isBlank()) {
-            _register.update { it.copy(confirmError = "Debes confirmar la contraseña") }
+
+        if (state.pass.length < 6) {
+            _register.update { it.copy(passError = "Contraseña mínimo 6 caracteres") }
             return
         }
-        if (state.pass != state.confirm) {
-            _register.update { it.copy(confirmError = "Contraseñas no coinciden") }
+
+        if (!state.pass.matches(Regex("^(?=.*[A-Z])(?=.*[0-9]).*$"))) {
+            _register.update { it.copy(passError = "Debe incluir una mayúscula y un número") }
             return
         }
+
 
         // --- REGISTRO ---
         viewModelScope.launch {

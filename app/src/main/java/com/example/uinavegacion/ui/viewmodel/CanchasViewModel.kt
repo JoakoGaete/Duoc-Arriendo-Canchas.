@@ -48,48 +48,5 @@ class CanchasViewModel(
             )
         }
     }
-
-    fun createField(
-        name: String,
-        type: String,
-        location: String,
-        pricePerHour: Double,
-        imageUrl: String
-    ) {
-        uiState = uiState.copy(isLoading = true, error = null)
-
-        viewModelScope.launch {
-
-            val newField = CanchasDto(
-                id = 0L,
-                name = name,
-                type = type,
-                location = location,
-                pricePerHour = pricePerHour,
-                imageUrl = imageUrl
-            )
-
-            val result = repository.create(newField)
-
-            uiState = result.fold(
-                onSuccess = { created ->
-
-                    val updated = uiState.fields + created
-
-                    uiState.copy(
-                        isLoading = false,
-                        fields = updated,
-                        lastActionMessage = "Cancha creada id=${created.name}"
-                    )
-                },
-                onFailure = { e ->
-                    uiState.copy(
-                        isLoading = false,
-                        error = e.message ?: "Error al crear cancha"
-                    )
-                }
-            )
-        }
-    }
 }
 

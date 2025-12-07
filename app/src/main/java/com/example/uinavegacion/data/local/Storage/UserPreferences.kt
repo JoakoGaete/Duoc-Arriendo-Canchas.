@@ -23,8 +23,12 @@ class UserPreferences (private val context: Context){
             prefs[isLoggedInKey] = value
         }
     }
+
     suspend fun logout() {
-        setLoggedIn(false)
+        context.dataStore.edit { prefs ->
+            prefs[isLoggedInKey] = false
+            prefs[userIdKey] = 0L // o prefs.remove(userIdKey) si quieres
+        }
     }
 
 
@@ -61,6 +65,14 @@ class UserPreferences (private val context: Context){
     suspend fun setAdmin(value: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[isAdminKey] = value
+        }
+    }
+    suspend fun clear() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(isLoggedInKey)
+            prefs.remove(userIdKey)
+            prefs.remove(profilePhotoKey)
+            prefs.remove(isAdminKey)
         }
     }
 

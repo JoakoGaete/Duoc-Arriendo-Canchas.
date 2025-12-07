@@ -16,11 +16,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 
 
 import com.example.uinavegacion.R
@@ -31,7 +34,9 @@ fun FieldCard(
     field: CanchasDto,
     onClick: () -> Unit
 ) {
-    Card (
+    val imageUrl = "http://10.0.2.2:8082/api/fields/${field.id}/imagen"
+
+    Card(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxWidth()
@@ -41,27 +46,28 @@ fun FieldCard(
     ) {
         Column {
             Image(
-                painter= painterResource(
-                    id = when (field.imageUrl){
-                        "cancha1" -> R.drawable.cancha1
-                        "cancha2" -> R.drawable.cancha2
-                        "cancha3" -> R.drawable.cancha3
-                        else -> R.drawable.cancha4
-                    }
+                painter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imageUrl)
+                        .crossfade(true)
+                        .error(R.drawable.cancha4)   // imagen por defecto si falla
+                        .placeholder(R.drawable.cancha1) // mientras carga
+                        .build()
                 ),
-                contentDescription= field.name,
+                contentDescription = field.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(160.dp)
             )
+
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(field.name ?: "Sin nombre", style = MaterialTheme.typography.titleMedium)
                 Text(field.type ?: "Sin tipo", color = Color.DarkGray, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Ubicación: ${field.location ?: "Sin ubicación"}")
                 Text(
-                    text = "Precio: $${field.pricePerHour.toInt() ?: "0"} / hora",
+                    text = "Precio: $${field.pricePerHour.toInt()} / hora",
                     fontWeight = FontWeight.Bold
                 )
             }

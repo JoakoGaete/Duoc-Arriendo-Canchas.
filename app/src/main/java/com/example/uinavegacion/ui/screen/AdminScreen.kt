@@ -1,5 +1,6 @@
 package com.example.uinavegacion.ui.screen
 
+import android.R
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,7 +51,6 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
     val bookings by adminViewModel.allBookings.collectAsStateWithLifecycle()
     val fields by adminViewModel.allFields.collectAsStateWithLifecycle()
     val status by adminViewModel.status.collectAsStateWithLifecycle()
-
     val context = LocalContext.current
 
     // Campos para nueva cancha
@@ -71,7 +73,7 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
         adminViewModel.loadFields()
     }
 
-    // Mostrar errores como Toast
+    // Mostrar errores o status como Toast
     LaunchedEffect(status) {
         status?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -118,8 +120,9 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
             modifier = Modifier.fillMaxWidth()
         )
 
+        Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = { pickImageLauncher.launch("image/*") }) {
+            Button(onClick = { pickImageLauncher.launch("image/*") }, colors = ButtonDefaults.buttonColors(Color(0xFF2E811F))) {
                 Text(if (imageUri == null) "Seleccionar imagen" else "Cambiar imagen")
             }
             imageUri?.let {
@@ -138,12 +141,14 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
             onClick = {
                 val priceDouble = price.toDoubleOrNull()
                 if (name.isNotBlank() && type.isNotBlank() && location.isNotBlank() && priceDouble != null) {
+                    // Llamamos al ViewModel con el nuevo método que sube cancha + imagen
                     adminViewModel.addField(
                         name = name,
                         type = type,
                         location = location,
                         pricePerHour = priceDouble,
-                        imageUrl = imageUri?.toString() ?: ""
+                        imageUri = imageUri,
+                        context = context
                     )
                     // Limpiar campos
                     name = ""; type = ""; location = ""; price = ""; imageUri = null
@@ -151,7 +156,8 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
                     Toast.makeText(context, "Por favor, completa todos los campos correctamente", Toast.LENGTH_SHORT).show()
                 }
             },
-            modifier = Modifier.align(Alignment.End)
+            modifier = Modifier.align(Alignment.End),
+            colors = ButtonDefaults.buttonColors(Color(0xFF2E811F))
         ) {
             Text("Agregar Cancha")
         }
@@ -160,10 +166,13 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
         Text("Canchas existentes:", fontWeight = FontWeight.Medium)
         fields.forEach { field ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                field.imageUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+                val imageUrl = field.id?.let { id ->
+                    "http://10.0.2.2:8082/api/fields/$id/imagen"
+                }
+                imageUrl?.let { url ->
                     Image(
-                        painter = rememberAsyncImagePainter(Uri.parse(url)),
-                        contentDescription = "Imagen cancha",
+                        painter = rememberAsyncImagePainter(url),
+                        contentDescription = field.name,
                         modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop
                     )
@@ -172,7 +181,6 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
                 Text("- ${field.name ?: ""} | ${field.type ?: ""} | ${field.location ?: ""} | $${field.pricePerHour ?: 0}")
             }
         }
-
 
         Spacer(Modifier.height(30.dp))
         Text("Todas las reservas", fontSize = 18.sp, fontWeight = FontWeight.Medium)
@@ -186,11 +194,13 @@ fun AdminScreen(adminViewModel: AdminViewModel) {
                     onDelete = { adminViewModel.deleteBooking(reserva.id ?: 0L) }
                 )
             }
-            }
-
-                Spacer(Modifier.height(12.dp))
-            }
         }
+
+        Spacer(Modifier.height(12.dp))
+    }
+}
+
+
 
 
 

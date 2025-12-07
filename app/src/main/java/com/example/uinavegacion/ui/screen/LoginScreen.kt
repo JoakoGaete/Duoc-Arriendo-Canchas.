@@ -214,7 +214,7 @@ fun LoginScreenVm(
 
                 if (errorMsg != null) {                          // Error global (credenciales)
                     Spacer(Modifier.height(8.dp))
-                    Text(errorMsg, color = MaterialTheme.colorScheme.error)
+                    Text("credenciales incorrectas", color = MaterialTheme.colorScheme.error)
                 }
 
                 Spacer(Modifier.height(12.dp))                   // Espacio

@@ -1,5 +1,8 @@
 package com.example.uinavegacion.ui.viewmodel
 
+import android.app.Application
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.uinavegacion.data.remote.dto.BookingDto
@@ -12,12 +15,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.lifecycle.AndroidViewModel
+import com.google.gson.Gson
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
 
 class AdminViewModel(
+    application: Application,
     private val bookingRepository: BookingApiRepository,
     private val fieldRepository: CanchasApiRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _allBookings = MutableStateFlow<List<BookingDto>>(emptyList())
     val allBookings: StateFlow<List<BookingDto>> = _allBookings.asStateFlow()
@@ -67,25 +78,49 @@ class AdminViewModel(
         type: String,
         location: String,
         pricePerHour: Double,
-        imageUrl: String = ""
+        imageUri: Uri?,
+        context: Context
     ) {
         viewModelScope.launch {
             try {
-                val newField = CanchasDto(
-                    id = 0L,
+                val cancha = CanchasDto(
+                    id = null,
                     name = name,
                     type = type,
                     location = location,
                     pricePerHour = pricePerHour,
-                    imageUrl = imageUrl
+                    imageUrl = null
                 )
-                fieldRepository.create(newField)
+
+                // Llamamos al repositorio nuevo que maneja Uri + Context
+                val created = fieldRepository.create(cancha, imageUri, context).getOrThrow()
+
+                // Refrescar lista
                 loadFields()
+                _status.value = "Cancha creada con éxito"
+
             } catch (e: Exception) {
-                _status.value = e.message
+                _status.value = "Error: ${e.message}"
             }
         }
     }
+
+
+
+    fun getFileFromUri(context: Context, uri: Uri): File? {
+        return try {
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+            val file = File(context.cacheDir, "upload_image.jpg")
+            file.outputStream().use { output ->
+                inputStream.copyTo(output)
+            }
+            file
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
 
     fun clearStatus() {
         _status.value = null
