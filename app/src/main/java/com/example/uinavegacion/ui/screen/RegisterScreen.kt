@@ -237,28 +237,27 @@ private fun RegisterScreen(
                 onClick = onSubmit,                          // Intenta registrar (inserta en la colección)
                 enabled = canSubmit && !isSubmitting,        // Solo si todo es válido y no cargando
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(
-                    0xFF218D1B))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF198514))
             ) {
                 if (isSubmitting) {                          // Muestra loading mientras “procesa”
                     CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Creando cuenta...")
                 } else {
-                    Text("Registrar", color = Color(0xFF218D1B))
+                    Text("Registrar", color = Color(0xFFFDF99A))
                 }
             }
 
             if (errorMsg != null) {                          // Error global (ej: usuario duplicado)
                 Spacer(Modifier.height(8.dp))
-                Text(errorMsg, color = MaterialTheme.colorScheme.error)
+                Text("Error al registrar, revisar datos", color = MaterialTheme.colorScheme.error)
             }
 
             Spacer(Modifier.height(12.dp))                   // Espacio
 
             // ---------- BOTÓN IR A LOGIN ----------
             OutlinedButton(onClick = onGoLogin, modifier = Modifier.fillMaxWidth()) {
-                Text("Ir a iniciar sesion")
+                Text("Ir a iniciar sesion", color = Color(0xFF198514))
             }
             Image(
                 painter = painter2,

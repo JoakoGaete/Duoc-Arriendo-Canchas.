@@ -97,4 +97,9 @@ dependencies {
     //reglas adicionales
     androidTestImplementation("androidx.test:core-ktx:1.5.0")
     androidTestImplementation("androidx.test:rules:1.5.0")
+
+    testImplementation(libs.junit)
+    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("org.robolectric:robolectric:4.13")
+   
 }

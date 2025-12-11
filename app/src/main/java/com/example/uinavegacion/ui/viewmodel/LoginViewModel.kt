@@ -171,8 +171,8 @@ class LoginViewModel(
     fun submitRegister() {
         val state = _register.value
 
-        if (state.name.length < 4) {
-            _register.update { it.copy(nameError = "Debe tener mínimo 4 caracteres") }
+        if (state.name.length < 2) {
+            _register.update { it.copy(nameError = "Debe tener mínimo 2 caracteres") }
             return
         }
 
