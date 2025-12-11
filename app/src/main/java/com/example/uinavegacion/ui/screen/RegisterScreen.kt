@@ -250,7 +250,7 @@ private fun RegisterScreen(
 
             if (errorMsg != null) {                          // Error global (ej: usuario duplicado)
                 Spacer(Modifier.height(8.dp))
-                Text("Error al registrar, revisar datos", color = MaterialTheme.colorScheme.error)
+                Text("Error al registrar,ya existe un usuario con esa cuenta", color = MaterialTheme.colorScheme.error)
             }
 
             Spacer(Modifier.height(12.dp))                   // Espacio

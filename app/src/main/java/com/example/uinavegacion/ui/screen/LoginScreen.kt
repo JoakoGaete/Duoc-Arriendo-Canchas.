@@ -51,6 +51,8 @@ fun LoginScreenVm(
         state.user?.let { user ->
             prefs.setLoggedIn(true)
             prefs.setUserId(user.id)
+            prefs.setAdmin(user.isAdmin)
+
 
 
             Toast.makeText(context, "Bienvenido ${user.name ?: "Invitado"}", Toast.LENGTH_SHORT).show()

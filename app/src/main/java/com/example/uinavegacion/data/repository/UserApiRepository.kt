@@ -7,6 +7,7 @@ import com.example.uinavegacion.data.remote.dto.LoginRequest
 import com.example.uinavegacion.data.remote.dto.LoginResponse
 import com.example.uinavegacion.data.remote.dto.UserRequestDto
 import com.example.uinavegacion.data.remote.dto.UserResponseDto
+import com.example.uinavegacion.data.remote.dto.UserUpdateRequestDto
 import com.example.uinavegacion.data.remote.dto.UsuariosDto
 import retrofit2.HttpException
 
@@ -40,11 +41,11 @@ class UserApiRepository(
 
     // Actualiza un post existente.
 
-    suspend fun update(id: Int, usuario: UsuariosDto): Result<UsuariosDto> = try {
-        Result.success(api.updateUsuario(id, usuario))
-    } catch (e: Exception) {
-        Result.failure(e)
+    suspend fun updateUser(id: Long, body: UserUpdateRequestDto): UserResponseDto {
+        return api.updateUsuario(id, body)
     }
+
+
 
     // Elimina un post por su ID.
     suspend fun delete(id: Int): Result<Unit> = try {

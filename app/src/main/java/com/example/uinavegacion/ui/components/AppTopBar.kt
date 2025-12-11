@@ -34,7 +34,7 @@ fun AppTopBar(
     onLogin: () -> Unit,      // Navega a Login
     onRegister: () -> Unit,    // Navega a Registro
     onBooking: () -> Unit,
-    onMapa: ()-> Unit,
+    onAdmin: ()-> Unit,
     onPerfil: ()-> Unit
 ) {
     //lo que hace es crear una variable de estado recordada que le dice a la interfaz
@@ -43,6 +43,7 @@ fun AppTopBar(
     val context = LocalContext.current
     val userPrefrs = remember { UserPreferences(context) }
     val isLoggedIn by  userPrefrs.isLoggedIn.collectAsStateWithLifecycle(false)
+    val isAdmin by userPrefrs.isAdmin.collectAsStateWithLifecycle(false)
 
 
     CenterAlignedTopAppBar( // Barra alineada al centro
@@ -65,21 +66,28 @@ fun AppTopBar(
         },
         actions = { // Acciones a la derecha (íconos + overflow)
             IconButton(onClick = onHome) { // Ir a Home
-                Icon(Icons.Filled.Home, contentDescription = "Home") // Ícono Home
+                Icon(Icons.Filled.Home, contentDescription = "Home")
             }
-            IconButton(onClick = onBooking) { // Ir a Login
-                Icon(Icons.Filled.BookmarkAdded, contentDescription = "Arrendar") // Ícono Login
+            IconButton(onClick = onBooking) {
+                Icon(Icons.Filled.BookmarkAdded, contentDescription = "Arrendar")
             }
-            IconButton(onClick ={
-                if (isLoggedIn) onPerfil()
-                else onLogin()}) { // Ir a Login o a perfil dependiendo de si se inicio sesion o no
+            IconButton(
+                onClick = {
+                    when {
+                        !isLoggedIn -> onLogin()
+                        isAdmin -> onAdmin()
+                        else -> onPerfil()
+                    }
+                }
+            ) {
                 Icon(
-                    imageVector = if (isLoggedIn) Icons.Filled.Person else Icons.Filled.PersonOff,
+                    imageVector = Icons.Filled.Person,
                     contentDescription = null,
-                    tint = if (isLoggedIn)
-                        Color(0xFFF1E404)
-                    else
-                        MaterialTheme.colorScheme.outline
+                    tint = when {
+                        !isLoggedIn -> MaterialTheme.colorScheme.outline
+                        isAdmin -> Color.Yellow
+                        else -> Color(0xFF1343BE)
+                    }
                 )
             }
 

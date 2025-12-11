@@ -23,6 +23,7 @@ import com.example.uinavegacion.data.local.Storage.UserPreferences
 
 import com.example.uinavegacion.data.repository.BookingApiRepository
 import com.example.uinavegacion.data.repository.CanchasApiRepository
+import com.example.uinavegacion.data.repository.UserApiRepository
 
 
 import com.example.uinavegacion.ui.components.AppTopBar // Barra superior
@@ -34,6 +35,7 @@ import com.example.uinavegacion.ui.screen.HomeScreen // Pantalla Home
 import com.example.uinavegacion.ui.screen.LoginScreenVm // Pantalla Login
 import com.example.uinavegacion.ui.screen.RegisterScreenVm // Pantalla Registro
 import com.example.uinavegacion.ui.screen.BookingScreen
+import com.example.uinavegacion.ui.screen.EditProfileScreen
 import com.example.uinavegacion.ui.screen.MapaScreen
 import com.example.uinavegacion.ui.screen.PerfilScreen
 import com.example.uinavegacion.ui.viewmodel.AdminViewModel
@@ -42,6 +44,8 @@ import com.example.uinavegacion.ui.viewmodel.AdminViewModelFactory
 
 import com.example.uinavegacion.ui.viewmodel.BookingViewModel
 import com.example.uinavegacion.ui.viewmodel.CanchasViewModel
+import com.example.uinavegacion.ui.viewmodel.EditProfileViewModel
+import com.example.uinavegacion.ui.viewmodel.EditProfileViewModelFactory
 import com.example.uinavegacion.ui.viewmodel.LoginViewModel
 import com.example.uinavegacion.ui.viewmodel.UserBookingsViewModel
 
@@ -71,6 +75,7 @@ fun AppNavGraph(
     val goMapa: () -> Unit = { navController.navigate(Route.Mapa.path) }
     val goProfile: () -> Unit = { navController.navigate(Route.Perfil.path) }
     val goAdmin: () -> Unit = { navController.navigate(Route.Admin.path) }
+    val goEditProfile: () -> Unit = { navController.navigate(Route.EditProfile.path) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -102,8 +107,8 @@ fun AppNavGraph(
                     onLogin = goLogin,
                     onRegister = goRegister,
                     onBooking = goBooking,
-                    onMapa = goMapa,
-                    onPerfil = goProfile
+                    onPerfil = goProfile,
+                    onAdmin = goAdmin
                 )
             }
         ) { innerPadding ->
@@ -184,6 +189,7 @@ fun AppNavGraph(
                             AdminScreen(adminViewModel = adminViewModel)
                         } else {
                             PerfilScreen(
+                                navController = navController,
                                 userId = userId,
                                 loginViewModel = loginViewModel,
                                 userBookingsViewModel = userBookingsViewModel
@@ -202,6 +208,22 @@ fun AppNavGraph(
                         )
                         AdminScreen(adminViewModel = adminViewModel)
                     }
+                composable(Route.EditProfile.path) {
+                    val context = LocalContext.current
+
+
+                    val viewModel: EditProfileViewModel = viewModel(
+                        factory = EditProfileViewModelFactory(
+                            repo = UserApiRepository(),
+                            userId = userId ?: 0
+                        )
+                    )
+
+                    EditProfileScreen(
+                        navController = navController,
+                        viewModel = viewModel
+                    )
+                }
                 }
             }
         }

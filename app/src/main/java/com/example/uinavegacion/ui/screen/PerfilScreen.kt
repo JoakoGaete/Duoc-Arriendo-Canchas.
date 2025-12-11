@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 
 import com.example.uinavegacion.ui.components.ReservaItem
 
@@ -33,6 +35,7 @@ import com.example.uinavegacion.ui.viewmodel.UserBookingsViewModel
 
 @Composable
 fun PerfilScreen(
+    navController: NavController,
     userId: Long?,
     loginViewModel: LoginViewModel,
     userBookingsViewModel: UserBookingsViewModel
@@ -87,6 +90,15 @@ fun PerfilScreen(
             Text("Nombre: ${it.name ?: "No registrado"}", fontSize = 20.sp)
             Text("Email: ${it.email ?:"No registrado"}", fontSize = 18.sp)
             Text("Teléfono: ${it.phone ?:"No registrado"}", fontSize = 18.sp)
+
+            Button (
+                onClick = {
+                    navController.navigate("editProfile")
+                },
+                modifier = Modifier.padding(top = 20.dp)
+            ) {
+                Text("Editar Perfil")
+            }
 
             Spacer(modifier = Modifier.height(30.dp))
             HorizontalDivider()

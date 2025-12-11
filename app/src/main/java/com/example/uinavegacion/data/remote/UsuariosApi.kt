@@ -4,6 +4,7 @@ import com.example.uinavegacion.data.remote.dto.LoginRequest
 import com.example.uinavegacion.data.remote.dto.LoginResponse
 import com.example.uinavegacion.data.remote.dto.UserRequestDto
 import com.example.uinavegacion.data.remote.dto.UserResponseDto
+import com.example.uinavegacion.data.remote.dto.UserUpdateRequestDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -30,9 +31,9 @@ interface UsuariosApi {
 
     @PUT("users/{id}")
     suspend fun updateUsuario(
-        @Path("id") id: Int,
-        @Body usuario: UsuariosDto
-    ): UsuariosDto
+        @Path("id") id: Long,
+        @Body usuario: UserUpdateRequestDto
+    ): UserResponseDto
 
     @POST("users/login")
     suspend fun login(@Body loginRequest: LoginRequest): LoginResponse
