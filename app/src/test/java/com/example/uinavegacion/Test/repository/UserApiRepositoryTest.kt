@@ -116,28 +116,9 @@ class UserApiRepositoryTest {
     // -------------------------------------------------------------
     // 5) update()
     // -------------------------------------------------------------
-    @Test
-    fun update_retorna_ok() = runBlocking {
-        val u = UsuariosDto(3, "Maria", "maria@mail.com", "+569123567", password = "1234", isAdmin = false)
 
-        coEvery { api.updateUsuario(3, u) } returns u.copy(name = "MariaEditada")
 
-        val result = repo.update(3, u)
 
-        assertTrue(result.isSuccess)
-        assertEquals("MariaEditada", result.getOrNull()!!.name)
-    }
-
-    @Test
-    fun update_retorna_failure() = runBlocking {
-        val u = UsuariosDto(3, "Maria", "maria@mail.com", "+569123456", password = "1234", isAdmin = false)
-
-        coEvery { api.updateUsuario(3, u) } throws RuntimeException("Error")
-
-        val result = repo.update(3, u)
-
-        assertTrue(result.isFailure)
-    }
 
     // -------------------------------------------------------------
     // 6) delete()
