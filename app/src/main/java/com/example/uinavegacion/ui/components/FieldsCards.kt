@@ -50,8 +50,8 @@ fun FieldCard(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(imageUrl)
                         .crossfade(true)
-                        .error(R.drawable.cancha4)   // imagen por defecto si falla
-                        .placeholder(R.drawable.cancha1) // mientras carga
+                        .error(R.drawable.error)   // imagen por defecto si falla
+                        .placeholder(R.drawable.carga) // mientras carga
                         .build()
                 ),
                 contentDescription = field.name,
